@@ -15,6 +15,7 @@ type EngineRPC interface {
 	IncCounter(name string, labels map[string]string)
 	Observe(name string, value float64, labels map[string]string)
 	Ack(eventID string) error
+	PublishAck(ack AckMessage) error
 	EmitBatch(events []Event) error
 }
 
@@ -83,6 +84,11 @@ func (c *EngineRPCClient) Ack(eventID string) error {
 	return c.client.Call("Engine.AckRPC", &AckArgs{EventID: eventID}, &reply)
 }
 
+func (c *EngineRPCClient) PublishAck(ack AckMessage) error {
+	var reply struct{}
+	return c.client.Call("Engine.PublishAckRPC", &PublishAckArgs{Ack: ack}, &reply)
+}
+
 func (c *EngineRPCClient) EmitBatch(events []Event) error {
 	var reply struct{}
 	eventsJSON := make([][]byte, len(events))
@@ -120,6 +126,10 @@ type MetricArgs struct {
 
 type AckArgs struct {
 	EventID string
+}
+
+type PublishAckArgs struct {
+	Ack AckMessage
 }
 
 // Deprecated: EdgeSubject v1.3.1 已废弃

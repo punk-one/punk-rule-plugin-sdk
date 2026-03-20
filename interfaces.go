@@ -1,5 +1,7 @@
 package sdk
 
+import "context"
+
 // Logger 日志接口（v1.1.1）
 // 插件通过 Logger 记录日志，而不是直接使用标准库
 type Logger interface {
@@ -15,6 +17,7 @@ type Logger interface {
 type Emitter interface {
 	Publish(event Event) error
 	Ack(eventID string) error
+	PublishAck(ack AckMessage) error
 	// EmitTo 发送到指定路由标签（v1.3.1）
 	EmitTo(label string, event Event) error
 	// EmitBatch 批量发布事件 (v1.5.0)
@@ -53,6 +56,27 @@ type RuntimeContext interface {
 	Emitter() Emitter
 	// Metrics 返回指标记录器
 	Metrics() Metrics
+}
+
+// BuiltinRuntimeContext 是内置插件可选依赖的扩展上下文。
+// 外部插件通常拿不到此能力。
+type BuiltinRuntimeContext interface {
+	RuntimeContext
+	Context() context.Context
+}
+
+// StatefulRuntimeContext 是需要状态管理能力的插件可选依赖上下文。
+type StatefulRuntimeContext interface {
+	RuntimeContext
+	State() StateManager
+}
+
+// EngineBridgeRuntimeContext 是引擎与插件进程桥接时使用的扩展上下文。
+// 仅 Engine 内部的加载链路应依赖该接口。
+type EngineBridgeRuntimeContext interface {
+	RuntimeContext
+	GetEngineRPCServer() interface{}
+	SavePluginRPCClient(client *PluginRPCClient)
 }
 
 // Plugin 插件核心接口 (v1.1.0)

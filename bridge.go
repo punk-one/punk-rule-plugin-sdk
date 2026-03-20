@@ -50,6 +50,10 @@ func (e *EngineRPCEmitter) Ack(eventID string) error {
 	return e.engine.Ack(eventID)
 }
 
+func (e *EngineRPCEmitter) PublishAck(ack AckMessage) error {
+	return e.engine.PublishAck(ack)
+}
+
 func (e *EngineRPCEmitter) EmitTo(label string, evt Event) error {
 	if evt.Metadata == nil {
 		evt.Metadata = make(map[string]string)
@@ -149,5 +153,6 @@ func (e *NoOpEmitter) Publish(evt Event) error { return fmt.Errorf("emitter not 
 func (e *NoOpEmitter) EmitTo(label string, evt Event) error {
 	return fmt.Errorf("emitter not available")
 }
-func (e *NoOpEmitter) Ack(eventID string) error       { return nil }
-func (e *NoOpEmitter) EmitBatch(events []Event) error { return fmt.Errorf("emitter not available") }
+func (e *NoOpEmitter) Ack(eventID string) error        { return nil }
+func (e *NoOpEmitter) PublishAck(ack AckMessage) error { return nil }
+func (e *NoOpEmitter) EmitBatch(events []Event) error  { return fmt.Errorf("emitter not available") }

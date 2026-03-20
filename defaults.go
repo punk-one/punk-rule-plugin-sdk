@@ -101,7 +101,7 @@ type RuntimeContextImpl struct {
 	metrics         Metrics
 	emitter         Emitter
 	stateMgr        StateManager
-	saveEngineRPCCB func(engineRPC interface{})
+	savePluginRPCCB func(client *PluginRPCClient)
 }
 
 func (r *RuntimeContextImpl) RuleID() string           { return r.ruleID }
@@ -112,8 +112,15 @@ func (r *RuntimeContextImpl) Metrics() Metrics         { return r.metrics }
 func (r *RuntimeContextImpl) Context() context.Context { return r.ctx }
 func (r *RuntimeContextImpl) State() StateManager      { return r.stateMgr }
 
+func (r *RuntimeContextImpl) SavePluginRPCClient(client *PluginRPCClient) {
+	if r.savePluginRPCCB != nil {
+		r.savePluginRPCCB(client)
+	}
+}
+
+// SaveEngineRPC 保留为兼容入口，内部转发到类型安全的方法。
 func (r *RuntimeContextImpl) SaveEngineRPC(engineRPC interface{}) {
-	if r.saveEngineRPCCB != nil {
-		r.saveEngineRPCCB(engineRPC)
+	if client, ok := engineRPC.(*PluginRPCClient); ok {
+		r.SavePluginRPCClient(client)
 	}
 }
