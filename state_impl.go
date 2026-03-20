@@ -7,19 +7,24 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-
-	"github.com/punk-rule-engine/punk-rule-engine/pkg/state"
 )
 
 // StateManagerImpl 生产级 StateManager 实现
 type StateManagerImpl struct {
 	ruleID  string
 	nodeID  string
-	manager *state.StateManager
+	manager StateStore
+}
+
+// StateStore 定义状态存储后端最小能力，避免 SDK 反向依赖 engine 内部包。
+type StateStore interface {
+	GetState(ctx context.Context, key string, state interface{}) error
+	SetState(ctx context.Context, key string, state interface{}) error
+	DeleteState(ctx context.Context, key string) error
 }
 
 // NewStateManager 创建 StateManager
-func NewStateManager(ruleID, nodeID string, manager *state.StateManager) StateManager {
+func NewStateManager(ruleID, nodeID string, manager StateStore) StateManager {
 	return &StateManagerImpl{
 		ruleID:  ruleID,
 		nodeID:  nodeID,
