@@ -17,6 +17,9 @@ type EngineRPC interface {
 	Ack(eventID string) error
 	PublishAck(ack AckMessage) error
 	EmitBatch(events []Event) error
+	GetState(key string) ([]byte, error)
+	SetState(key string, value []byte) error
+	DeleteState(key string) error
 }
 
 // EngineRPCClient 引擎端 RPC 客户端包装器
@@ -105,6 +108,30 @@ func (c *EngineRPCClient) EmitBatch(events []Event) error {
 	}, &reply)
 }
 
+func (c *EngineRPCClient) GetState(key string) ([]byte, error) {
+	var reply StateGetReply
+	if err := c.client.Call("Engine.GetStateRPC", &StateKeyArgs{Key: key}, &reply); err != nil {
+		return nil, err
+	}
+	if !reply.Found {
+		return nil, nil
+	}
+	return reply.Value, nil
+}
+
+func (c *EngineRPCClient) SetState(key string, value []byte) error {
+	var reply struct{}
+	return c.client.Call("Engine.SetStateRPC", &StateSetArgs{
+		Key:   key,
+		Value: value,
+	}, &reply)
+}
+
+func (c *EngineRPCClient) DeleteState(key string) error {
+	var reply struct{}
+	return c.client.Call("Engine.DeleteStateRPC", &StateKeyArgs{Key: key}, &reply)
+}
+
 // RPC Args Structs
 
 type LogBatchArgs struct {
@@ -130,6 +157,20 @@ type AckArgs struct {
 
 type PublishAckArgs struct {
 	Ack AckMessage
+}
+
+type StateKeyArgs struct {
+	Key string
+}
+
+type StateSetArgs struct {
+	Key   string
+	Value []byte
+}
+
+type StateGetReply struct {
+	Value []byte
+	Found bool
 }
 
 // Deprecated: EdgeSubject v1.3.1 已废弃

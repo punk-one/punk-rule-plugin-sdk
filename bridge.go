@@ -8,30 +8,33 @@ import (
 
 // PluginRuntimeContext 插件进程内的 RuntimeContext 实现
 type PluginRuntimeContext struct {
-	ruleID  string
-	nodeID  string
-	engine  EngineRPC
-	logger  Logger
-	emitter Emitter
-	metrics Metrics
+	ruleID   string
+	nodeID   string
+	engine   EngineRPC
+	logger   Logger
+	emitter  Emitter
+	metrics  Metrics
+	stateMgr StateManager
 }
 
 func NewPluginRuntimeContext(engine EngineRPC, ruleID, nodeID string) RuntimeContext {
 	return &PluginRuntimeContext{
-		ruleID:  ruleID,
-		nodeID:  nodeID,
-		engine:  engine,
-		logger:  NewRPCLoggerFromEngine(engine, ruleID, nodeID),
-		emitter: NewRPCEmitterFromEngine(engine),
-		metrics: NewRPCMetricsFromEngine(engine, ruleID, nodeID),
+		ruleID:   ruleID,
+		nodeID:   nodeID,
+		engine:   engine,
+		logger:   NewRPCLoggerFromEngine(engine, ruleID, nodeID),
+		emitter:  NewRPCEmitterFromEngine(engine),
+		metrics:  NewRPCMetricsFromEngine(engine, ruleID, nodeID),
+		stateMgr: NewStateManager(ruleID, nodeID, newRPCStateStore(engine)),
 	}
 }
 
-func (r *PluginRuntimeContext) RuleID() string   { return r.ruleID }
-func (r *PluginRuntimeContext) NodeID() string   { return r.nodeID }
-func (r *PluginRuntimeContext) Logger() Logger   { return r.logger }
-func (r *PluginRuntimeContext) Emitter() Emitter { return r.emitter }
-func (r *PluginRuntimeContext) Metrics() Metrics { return r.metrics }
+func (r *PluginRuntimeContext) RuleID() string      { return r.ruleID }
+func (r *PluginRuntimeContext) NodeID() string      { return r.nodeID }
+func (r *PluginRuntimeContext) Logger() Logger      { return r.logger }
+func (r *PluginRuntimeContext) Emitter() Emitter    { return r.emitter }
+func (r *PluginRuntimeContext) Metrics() Metrics    { return r.metrics }
+func (r *PluginRuntimeContext) State() StateManager { return r.stateMgr }
 
 // EngineRPCEmitter 基于 EngineRPC 的 Emitter
 type EngineRPCEmitter struct {
@@ -143,8 +146,29 @@ func (l *EngineRPCLogger) LogBatch(level LogLevel, messages []string, fields []m
 	l.engine.LogBatch(level, messages, fields)
 }
 
+type EngineRPCMetrics struct {
+	engine EngineRPC
+}
+
+func (m *EngineRPCMetrics) IncCounter(name string, labels map[string]string) {
+	if m.engine == nil {
+		return
+	}
+	m.engine.IncCounter(name, labels)
+}
+
+func (m *EngineRPCMetrics) Observe(name string, value float64, labels map[string]string) {
+	if m.engine == nil {
+		return
+	}
+	m.engine.Observe(name, value, labels)
+}
+
 func NewRPCMetricsFromEngine(engine EngineRPC, ruleID, nodeID string) Metrics {
-	return &DefaultMetrics{}
+	if engine == nil {
+		return &DefaultMetrics{}
+	}
+	return &EngineRPCMetrics{engine: engine}
 }
 
 type NoOpEmitter struct{}

@@ -1,4 +1,4 @@
-# Punk Rule Engine Plugin SDK v1.5.0
+# Punk Rule Engine Plugin SDK v1.5.2
 
 Punk Rule Engine Plugin SDK 是一套高性能的 **"DAG 节点执行 SDK"**，专为实时数据处理、边缘计算和云端规则编排而设计。
 
@@ -21,7 +21,7 @@ go get github.com/punk-one/punk-rule-plugin-sdk@latest
 发布正式版本后，推荐显式指定 tag：
 
 ```bash
-go get github.com/punk-one/punk-rule-plugin-sdk@v1.5.0
+go get github.com/punk-one/punk-rule-plugin-sdk@v1.5.2
 ```
 
 ## 目录结构 (v1.5.0 重构版)
@@ -57,7 +57,7 @@ func (p *MyProcessor) Info() sdk.PluginInfo {
     return sdk.PluginInfo{
         ID:      "my-processor",
         Name:    "My Processor",
-        Version: "1.5.0",
+        Version:     "1.5.2",
         Type:    sdk.PluginTypeProcessor,
         Capabilities: sdk.PluginCapabilities{
             SupportBatch: true, // 声明支持批量处理
@@ -158,7 +158,7 @@ func (p *MyProcessor) Info() sdk.PluginInfo {
     return sdk.PluginInfo{
         ID:      "my-processor",
         Name:    "My Processor",
-        Version: "1.5.0",
+        Version:     "1.5.2",
         Type:    sdk.PluginTypeProcessor,
         Capabilities: sdk.PluginCapabilities{
             ConfigSchema: `{

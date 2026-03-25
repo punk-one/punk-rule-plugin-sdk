@@ -16,7 +16,7 @@ func (p *ExamplePlugin) Info() PluginInfo {
 	return PluginInfo{
 		ID:          "example-processor",
 		Name:        "Example Processor",
-		Version:     "1.5.0",
+		Version:     "1.5.2",
 		Description: "An example processor plugin",
 		Type:        PluginTypeProcessor,
 		Capabilities: PluginCapabilities{
@@ -65,7 +65,7 @@ func (p *ExampleSourcePlugin) Info() PluginInfo {
 	return PluginInfo{
 		ID:      "example-source",
 		Name:    "Example Source",
-		Version: "1.5.0",
+		Version: "1.5.2",
 		Type:    PluginTypeSource,
 	}
 }
