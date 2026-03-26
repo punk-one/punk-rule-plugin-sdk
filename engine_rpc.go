@@ -3,6 +3,7 @@ package sdk
 import (
 	"fmt"
 	"net/rpc"
+	"time"
 )
 
 // EngineRPC 引擎端 RPC 接口（v1.2）
@@ -19,6 +20,7 @@ type EngineRPC interface {
 	EmitBatch(events []Event) error
 	GetState(key string) ([]byte, error)
 	SetState(key string, value []byte) error
+	SetStateWithTTL(key string, value []byte, ttl time.Duration) error
 	DeleteState(key string) error
 }
 
@@ -127,6 +129,15 @@ func (c *EngineRPCClient) SetState(key string, value []byte) error {
 	}, &reply)
 }
 
+func (c *EngineRPCClient) SetStateWithTTL(key string, value []byte, ttl time.Duration) error {
+	var reply struct{}
+	return c.client.Call("Engine.SetStateWithTTLRPC", &StateSetWithTTLArgs{
+		Key:      key,
+		Value:    value,
+		TTLNanos: ttl.Nanoseconds(),
+	}, &reply)
+}
+
 func (c *EngineRPCClient) DeleteState(key string) error {
 	var reply struct{}
 	return c.client.Call("Engine.DeleteStateRPC", &StateKeyArgs{Key: key}, &reply)
@@ -166,6 +177,12 @@ type StateKeyArgs struct {
 type StateSetArgs struct {
 	Key   string
 	Value []byte
+}
+
+type StateSetWithTTLArgs struct {
+	Key      string
+	Value    []byte
+	TTLNanos int64
 }
 
 type StateGetReply struct {

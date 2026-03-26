@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 )
 
 // StateManagerImpl 生产级 StateManager 实现
@@ -20,6 +21,7 @@ type StateManagerImpl struct {
 type StateStore interface {
 	GetState(ctx context.Context, key string, state interface{}) error
 	SetState(ctx context.Context, key string, state interface{}) error
+	SetStateWithTTL(ctx context.Context, key string, state interface{}, ttl time.Duration) error
 	DeleteState(ctx context.Context, key string) error
 }
 
@@ -38,6 +40,10 @@ func (s *StateManagerImpl) GetState(key string, state interface{}) error {
 
 func (s *StateManagerImpl) SetState(key string, state interface{}) error {
 	return s.manager.SetState(context.Background(), key, state)
+}
+
+func (s *StateManagerImpl) SetStateWithTTL(key string, state interface{}, ttl time.Duration) error {
+	return s.manager.SetStateWithTTL(context.Background(), key, state, ttl)
 }
 
 func (s *StateManagerImpl) DeleteState(key string) error {

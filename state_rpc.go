@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 )
 
 type rpcStateStore struct {
@@ -29,6 +30,10 @@ func (s *rpcStateStore) GetState(ctx context.Context, key string, state interfac
 }
 
 func (s *rpcStateStore) SetState(ctx context.Context, key string, state interface{}) error {
+	return s.SetStateWithTTL(ctx, key, state, 0)
+}
+
+func (s *rpcStateStore) SetStateWithTTL(ctx context.Context, key string, state interface{}, ttl time.Duration) error {
 	if s.engine == nil {
 		return fmt.Errorf("state manager not available")
 	}
@@ -36,7 +41,7 @@ func (s *rpcStateStore) SetState(ctx context.Context, key string, state interfac
 	if err != nil {
 		return err
 	}
-	return s.engine.SetState(key, data)
+	return s.engine.SetStateWithTTL(key, data, ttl)
 }
 
 func (s *rpcStateStore) DeleteState(ctx context.Context, key string) error {

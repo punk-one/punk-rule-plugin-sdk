@@ -1,6 +1,9 @@
 package sdk
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 // Logger 日志接口（v1.1.1）
 // 插件通过 Logger 记录日志，而不是直接使用标准库
@@ -38,6 +41,8 @@ type StateManager interface {
 	GetState(key string, state interface{}) error
 	// SetState 设置状态
 	SetState(key string, state interface{}) error
+	// SetStateWithTTL 设置带过期时间的状态
+	SetStateWithTTL(key string, state interface{}, ttl time.Duration) error
 	// DeleteState 删除状态
 	DeleteState(key string) error
 	// GenerateKey 生成符合规范的 State Key

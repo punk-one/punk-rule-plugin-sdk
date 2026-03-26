@@ -1,6 +1,9 @@
 package sdk
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 type engineRPCStub struct {
 	state       map[string][]byte
@@ -29,6 +32,9 @@ func (s *engineRPCStub) GetState(key string) ([]byte, error) { return s.state[ke
 func (s *engineRPCStub) SetState(key string, value []byte) error {
 	s.state[key] = append([]byte(nil), value...)
 	return nil
+}
+func (s *engineRPCStub) SetStateWithTTL(key string, value []byte, ttl time.Duration) error {
+	return s.SetState(key, value)
 }
 func (s *engineRPCStub) DeleteState(key string) error { delete(s.state, key); return nil }
 
