@@ -1,0 +1,68 @@
+package core
+
+import (
+	"context"
+	"time"
+)
+
+type Logger interface {
+	Debug(msg string, fields ...Field)
+	Info(msg string, fields ...Field)
+	Warn(msg string, fields ...Field)
+	Error(msg string, fields ...Field)
+	LogBatch(level LogLevel, messages []string, fields []map[string]interface{})
+}
+
+type Emitter interface {
+	Publish(event Event) error
+	Ack(eventID string) error
+	PublishAck(ack AckMessage) error
+	EmitTo(label string, event Event) error
+	EmitBatch(events []Event) error
+}
+
+type Metrics interface {
+	IncCounter(name string, labels map[string]string)
+	Observe(name string, value float64, labels map[string]string)
+}
+
+type StateManager interface {
+	GetState(key string, state interface{}) error
+	SetState(key string, state interface{}) error
+	SetStateWithTTL(key string, state interface{}, ttl time.Duration) error
+	DeleteState(key string) error
+	GenerateKey(keys []string) string
+}
+
+type StateStore interface {
+	GetState(ctx context.Context, key string, state interface{}) error
+	SetState(ctx context.Context, key string, state interface{}) error
+	SetStateWithTTL(ctx context.Context, key string, state interface{}, ttl time.Duration) error
+	DeleteState(ctx context.Context, key string) error
+}
+
+type RuntimeContext interface {
+	RuleID() string
+	NodeID() string
+	Logger() Logger
+	Emitter() Emitter
+	Metrics() Metrics
+	Health() HealthReporter
+}
+
+type Plugin interface {
+	Info() PluginInfo
+	Init(cfg PluginConfig) error
+	Start(ctx RuntimeContext) error
+	OnEvent(e Event) error
+	OnEvents(events []Event) error
+	Stop() error
+}
+
+type BasePlugin struct{}
+
+func (b *BasePlugin) Init(cfg PluginConfig) error    { return nil }
+func (b *BasePlugin) Start(ctx RuntimeContext) error { return nil }
+func (b *BasePlugin) Stop() error                    { return nil }
+func (b *BasePlugin) OnEvent(e Event) error          { return ErrNotImplemented }
+func (b *BasePlugin) OnEvents(events []Event) error  { return ErrBatchNotSupported }

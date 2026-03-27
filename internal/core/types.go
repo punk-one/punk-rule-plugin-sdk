@@ -1,10 +1,7 @@
-package sdk
+package core
 
-import (
-	"encoding/json"
-)
+import "encoding/json"
 
-// PluginType 插件类型 (v1.1.0)
 type PluginType string
 
 const (
@@ -14,7 +11,6 @@ const (
 	PluginTypeUtility   PluginType = "utility"
 )
 
-// PluginInfo 插件元数据信息 (v1.1.0)
 type PluginInfo struct {
 	ID           string             `json:"id"`
 	Name         string             `json:"name"`
@@ -22,26 +18,26 @@ type PluginInfo struct {
 	Type         PluginType         `json:"type"`
 	Description  string             `json:"description"`
 	Author       string             `json:"author"`
-	Category     string             `json:"category"` // v1.1.1: 插件分类
+	Category     string             `json:"category"`
 	Capabilities PluginCapabilities `json:"capabilities"`
 }
 
-// PluginCapabilities 插件能力声明
 type PluginCapabilities struct {
-	InputPorts   int    `json:"input_ports"`   // 输入端口数量
-	OutputPorts  int    `json:"output_ports"`  // 输出端口数量
-	SupportBatch bool   `json:"support_batch"` // 是否支持批量处理 (v1.5.0)
-	SupportAck   bool   `json:"support_ack"`   // 是否支持确认机制
-	ConfigSchema string `json:"config_schema"` // JSON Schema (强校验)
-	Stateful     bool   `json:"stateful"`      // 是否是有状态插件
+	InputPorts   int    `json:"input_ports"`
+	OutputPorts  int    `json:"output_ports"`
+	SupportBatch bool   `json:"support_batch"`
+	SupportAck   bool   `json:"support_ack"`
+	ConfigSchema string `json:"config_schema"`
+	Stateful     bool   `json:"stateful"`
 }
 
-// PluginConfig 插件配置
 type PluginConfig struct {
-	Raw json.RawMessage `json:"raw"`
+	Raw    json.RawMessage `json:"raw"`
+	RuleID string          `json:"rule_id,omitempty"`
+	NodeID string          `json:"node_id,omitempty"`
+	Health HealthOptions   `json:"health,omitempty"`
 }
 
-// LogLevel 日志级别
 type LogLevel string
 
 const (
@@ -51,7 +47,6 @@ const (
 	LogLevelError LogLevel = "ERROR"
 )
 
-// Field 日志字段
 type Field struct {
 	Key   string
 	Value interface{}
