@@ -2,7 +2,7 @@
 
 本文档记录 `punk-rule-plugin-sdk` 自 `v1.5.x` 以来的重要公共 API 与工程结构演进。
 
-## v1.5.4 - 2026-03-26
+## v1.6.0 - 2026-03-27
 
 ### Added
 
@@ -26,6 +26,11 @@
 
 - 根目录职责收敛为“稳定公共 API”；示例统一放入 `examples/`，黑盒测试统一放入 `tests/`。
 - `runtime_context`、`emitter`、`metrics`、`engine_rpc` 已按“接口 / 实现 / RPC 适配”拆分为更清晰的文件。
+
+### Removed
+
+- 从根包移除实现细节导出：`PluginRuntimeContext`、`NewPluginRuntimeContext`、`EngineRPCEmitter`、`EngineRPCLogger`、`EngineRPCMetrics`、`NoOpEmitter`、`StateManagerImpl`。
+- SDK 自身测试改为优先依赖稳定接口，运行时实现测试下沉到 `internal/runtime`。
 
 ### Validation
 

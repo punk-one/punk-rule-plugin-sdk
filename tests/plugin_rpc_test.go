@@ -16,7 +16,7 @@ func (p *fallbackProcessor) Info() sdk.PluginInfo {
 	return sdk.PluginInfo{
 		ID:      "fallback-processor",
 		Name:    "Fallback Processor",
-		Version: "1.5.4",
+		Version: "1.6.0",
 		Type:    sdk.PluginTypeProcessor,
 		Capabilities: sdk.PluginCapabilities{
 			SupportBatch: false,
@@ -64,7 +64,7 @@ func (p *batchUnsupportedProcessor) Info() sdk.PluginInfo {
 	return sdk.PluginInfo{
 		ID:      "batch-unsupported-processor",
 		Name:    "Batch Unsupported Processor",
-		Version: "1.5.4",
+		Version: "1.6.0",
 		Type:    sdk.PluginTypeProcessor,
 		Capabilities: sdk.PluginCapabilities{
 			SupportBatch: true,
