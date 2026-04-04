@@ -11,3 +11,8 @@ type ServeOptions struct {
 func Serve(impl Plugin, options ServeOptions) {
 	transport.Serve(impl, options.Health)
 }
+
+// ServeConnector 以 SDK 约定的默认配置启动 connector 插件进程。
+func ServeConnector(impl ConnectorPlugin) {
+	transport.ServeConnector(impl)
+}

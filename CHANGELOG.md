@@ -2,6 +2,45 @@
 
 本文档记录 `punk-rule-plugin-sdk` 自 `v1.5.x` 以来的重要公共 API 与工程结构演进。
 
+## v1.7.0 - 2026-04-04
+
+### Added
+
+- 新增 connector 插件稳定入口：
+  - `PluginTypeConnector`
+  - `ConnectorPlugin`
+  - `ConnectorClient`
+  - `ServeConnector(...)`
+- 新增资源运行时能力：
+  - `RuntimeContext.Connector()`
+  - `RuntimeContext.ResourceEvents()`
+- 新增 connector 公开模型：
+  - `ConnectorResource`
+  - `ConnectorRequest`
+  - `ConnectorResponse`
+  - `ResourceStatusEvent`
+  - `ProviderPolicy`
+  - `WarmupPolicy`
+- 新增正式策略类型：
+  - `HealthPolicy`
+  - `QuotaPolicy`
+- 新增 `ConnectorResource` 策略 helper：
+  - `SetHealthPolicy(...)`
+  - `GetHealthPolicy()`
+  - `SetQuotaPolicy(...)`
+  - `GetQuotaPolicy()`
+- 新增 connector 公开 API 黑盒测试：`tests/connector_resource_test.go`
+
+### Changed
+
+- `PUBLIC_API` 基线已扩展到 connector-aware 2.x 运行时。
+- `PluginRuntimeContext` 现在会为外部插件桥接 connector 调用与资源状态事件流。
+- README、公开 API 基线与测试已对齐 connector 插件开发模式。
+
+### Validation
+
+- `go test ./tests ./internal/runtime` 已通过。
+
 ## v1.6.0 - 2026-03-27
 
 ### Added

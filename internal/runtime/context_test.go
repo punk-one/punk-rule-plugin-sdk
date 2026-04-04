@@ -44,6 +44,15 @@ func (s *engineBridgeStub) SetState(key string, value []byte) error {
 	s.state[key] = append([]byte(nil), value...)
 	return nil
 }
+func (s *engineBridgeStub) ExecuteConnector(req core.ConnectorRequest) (core.ConnectorResponse, error) {
+	return core.ConnectorResponse{}, nil
+}
+func (s *engineBridgeStub) CurrentResourceStatus(resourceRef string) (core.ResourceStatusEvent, bool) {
+	return core.ResourceStatusEvent{}, false
+}
+func (s *engineBridgeStub) NextResourceEvent(timeout time.Duration) (core.ResourceStatusEvent, bool, error) {
+	return core.ResourceStatusEvent{}, false, nil
+}
 
 func waitForHealthMessages(t *testing.T, stub *engineBridgeStub, expected int) []core.ReportHealthArgs {
 	t.Helper()

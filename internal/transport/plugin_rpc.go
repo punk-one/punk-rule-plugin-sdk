@@ -109,6 +109,9 @@ func (s *PluginRPCServer) Stop(args struct{}, reply *StopReply) error {
 		if closer, ok := s.ctx.Health().(interface{ Close() error }); ok {
 			_ = closer.Close()
 		}
+		if closer, ok := s.ctx.(interface{ Close() error }); ok {
+			_ = closer.Close()
+		}
 	}
 	return nil
 }

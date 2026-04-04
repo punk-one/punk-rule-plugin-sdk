@@ -88,6 +88,18 @@ func (s *engineRPCStub) DeleteState(key string) error {
 	return nil
 }
 
+func (s *engineRPCStub) ExecuteConnector(req sdk.ConnectorRequest) (sdk.ConnectorResponse, error) {
+	return sdk.ConnectorResponse{}, nil
+}
+
+func (s *engineRPCStub) CurrentResourceStatus(resourceRef string) (sdk.ResourceStatusEvent, bool) {
+	return sdk.ResourceStatusEvent{}, false
+}
+
+func (s *engineRPCStub) NextResourceEvent(timeout time.Duration) (sdk.ResourceStatusEvent, bool, error) {
+	return sdk.ResourceStatusEvent{}, false, nil
+}
+
 type stateStoreStub struct {
 	state map[string][]byte
 }

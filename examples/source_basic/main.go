@@ -11,7 +11,7 @@ func (s *source) Info() sdk.PluginInfo {
 	return sdk.PluginInfo{
 		ID:      "example-source",
 		Name:    "Example Source",
-		Version: "1.6.0",
+		Version: "1.7.0",
 		Type:    sdk.PluginTypeSource,
 	}
 }

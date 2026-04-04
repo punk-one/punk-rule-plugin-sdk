@@ -11,7 +11,7 @@ func (p *processor) Info() sdk.PluginInfo {
 	return sdk.PluginInfo{
 		ID:      "example-processor",
 		Name:    "Example Processor",
-		Version: "1.6.0",
+		Version: "1.7.0",
 		Type:    sdk.PluginTypeProcessor,
 		Capabilities: sdk.PluginCapabilities{
 			SupportBatch: true,

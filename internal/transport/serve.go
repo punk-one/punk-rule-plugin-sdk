@@ -17,3 +17,13 @@ func Serve(impl core.Plugin, options core.HealthOptions) {
 		GRPCServer: plugin.DefaultGRPCServer,
 	})
 }
+
+func ServeConnector(impl core.ConnectorPlugin) {
+	plugin.Serve(&plugin.ServeConfig{
+		HandshakeConfig: HandshakeConfig,
+		Plugins: map[string]plugin.Plugin{
+			"connector": &ConnectorRPC{Impl: impl},
+		},
+		GRPCServer: plugin.DefaultGRPCServer,
+	})
+}

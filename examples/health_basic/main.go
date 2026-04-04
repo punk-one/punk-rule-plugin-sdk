@@ -15,7 +15,7 @@ func (s *healthAwareSource) Info() sdk.PluginInfo {
 	return sdk.PluginInfo{
 		ID:      "example-health-source",
 		Name:    "Example Health Source",
-		Version: "1.6.0",
+		Version: "1.7.0",
 		Type:    sdk.PluginTypeSource,
 		Capabilities: sdk.PluginCapabilities{
 			Stateful: false,

@@ -41,6 +41,14 @@ type StateStore interface {
 	DeleteState(ctx context.Context, key string) error
 }
 
+type ConnectorClient interface {
+	Read(req ConnectorRequest) (ConnectorResponse, error)
+	Write(req ConnectorRequest) (ConnectorResponse, error)
+	BatchRead(req ConnectorRequest) (ConnectorResponse, error)
+	BatchWrite(req ConnectorRequest) (ConnectorResponse, error)
+	CurrentStatus(resourceRef string) (ResourceStatusEvent, bool)
+}
+
 type RuntimeContext interface {
 	RuleID() string
 	NodeID() string
@@ -48,6 +56,8 @@ type RuntimeContext interface {
 	Emitter() Emitter
 	Metrics() Metrics
 	Health() HealthReporter
+	Connector() ConnectorClient
+	ResourceEvents() <-chan ResourceStatusEvent
 }
 
 type Plugin interface {
@@ -56,6 +66,15 @@ type Plugin interface {
 	Start(ctx RuntimeContext) error
 	OnEvent(e Event) error
 	OnEvents(events []Event) error
+	Stop() error
+}
+
+type ConnectorPlugin interface {
+	Info() PluginInfo
+	CreateResource(resource ConnectorResource) (string, error)
+	DestroyResource(providerHandle string) error
+	Execute(providerHandle string, req ConnectorRequest) (ConnectorResponse, error)
+	Probe(providerHandle string, req ConnectorRequest) (ResourceStatusEvent, error)
 	Stop() error
 }
 

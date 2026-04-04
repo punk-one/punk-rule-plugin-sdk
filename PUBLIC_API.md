@@ -13,6 +13,20 @@ Generated from `public_api.json` via `go run ./internal/tools/public_api_export.
     "AckStatusSuccess",
     "BasePlugin",
     "BuiltinRuntimeContext",
+    "ConnectorClient",
+    "ConnectorPlugin",
+    "ConnectorRPC",
+    "ConnectorRPCClient",
+    "ConnectorRPCServer",
+    "ConnectorRequest",
+    "ConnectorRequestBatchRead",
+    "ConnectorRequestBatchWrite",
+    "ConnectorRequestKind",
+    "ConnectorRequestMetadata",
+    "ConnectorRequestRead",
+    "ConnectorRequestWrite",
+    "ConnectorResource",
+    "ConnectorResponse",
     "DecodeEvent",
     "DefaultHealthOptions",
     "DefaultLogger",
@@ -47,6 +61,7 @@ Generated from `public_api.json` via `go run ./internal/tools/public_api_export.
     "HealthKindHeartbeat",
     "HealthKindState",
     "HealthOptions",
+    "HealthPolicy",
     "HealthRecovering",
     "HealthReport",
     "HealthReporter",
@@ -88,20 +103,34 @@ Generated from `public_api.json` via `go run ./internal/tools/public_api_export.
     "PluginRPCClient",
     "PluginRPCServer",
     "PluginType",
+    "PluginTypeConnector",
     "PluginTypeProcessor",
     "PluginTypeSink",
     "PluginTypeSource",
     "PluginTypeUtility",
+    "ProviderPolicy",
     "PublishAckArgs",
+    "QuotaPolicy",
     "ReceiveEventArgs",
     "ReceiveEventReply",
     "ReceiveEventsArgs",
     "ReceiveEventsReply",
     "ReportHealthArgs",
+    "ResourceStatus",
+    "ResourceStatusBlocked",
+    "ResourceStatusCongested",
+    "ResourceStatusDegraded",
+    "ResourceStatusDisconnected",
+    "ResourceStatusEvent",
+    "ResourceStatusHealthy",
+    "ResourceStatusReadonly",
+    "ResourceStatusRecovering",
+    "ResourceStatusUnknown",
     "RetryableError",
     "RuntimeContext",
     "RuntimeContextImpl",
     "Serve",
+    "ServeConnector",
     "ServeOptions",
     "SetTraceID",
     "SkippableError",
@@ -114,7 +143,11 @@ Generated from `public_api.json` via `go run ./internal/tools/public_api_export.
     "StateSetWithTTLArgs",
     "StateStore",
     "StatefulRuntimeContext",
-    "StopReply"
+    "StopReply",
+    "WarmupPolicy",
+    "WarmupPolicyAlwaysOn",
+    "WarmupPolicyLazy",
+    "WarmupPolicyPreload"
   ]
 }
 ```
@@ -127,6 +160,20 @@ Generated from `public_api.json` via `go run ./internal/tools/public_api_export.
 - `AckStatusSuccess`
 - `BasePlugin`
 - `BuiltinRuntimeContext`
+- `ConnectorClient`
+- `ConnectorPlugin`
+- `ConnectorRPC`
+- `ConnectorRPCClient`
+- `ConnectorRPCServer`
+- `ConnectorRequest`
+- `ConnectorRequestBatchRead`
+- `ConnectorRequestBatchWrite`
+- `ConnectorRequestKind`
+- `ConnectorRequestMetadata`
+- `ConnectorRequestRead`
+- `ConnectorRequestWrite`
+- `ConnectorResource`
+- `ConnectorResponse`
 - `DecodeEvent`
 - `DefaultHealthOptions`
 - `DefaultLogger`
@@ -161,6 +208,7 @@ Generated from `public_api.json` via `go run ./internal/tools/public_api_export.
 - `HealthKindHeartbeat`
 - `HealthKindState`
 - `HealthOptions`
+- `HealthPolicy`
 - `HealthRecovering`
 - `HealthReport`
 - `HealthReporter`
@@ -202,20 +250,34 @@ Generated from `public_api.json` via `go run ./internal/tools/public_api_export.
 - `PluginRPCClient`
 - `PluginRPCServer`
 - `PluginType`
+- `PluginTypeConnector`
 - `PluginTypeProcessor`
 - `PluginTypeSink`
 - `PluginTypeSource`
 - `PluginTypeUtility`
+- `ProviderPolicy`
 - `PublishAckArgs`
+- `QuotaPolicy`
 - `ReceiveEventArgs`
 - `ReceiveEventReply`
 - `ReceiveEventsArgs`
 - `ReceiveEventsReply`
 - `ReportHealthArgs`
+- `ResourceStatus`
+- `ResourceStatusBlocked`
+- `ResourceStatusCongested`
+- `ResourceStatusDegraded`
+- `ResourceStatusDisconnected`
+- `ResourceStatusEvent`
+- `ResourceStatusHealthy`
+- `ResourceStatusReadonly`
+- `ResourceStatusRecovering`
+- `ResourceStatusUnknown`
 - `RetryableError`
 - `RuntimeContext`
 - `RuntimeContextImpl`
 - `Serve`
+- `ServeConnector`
 - `ServeOptions`
 - `SetTraceID`
 - `SkippableError`
@@ -229,3 +291,7 @@ Generated from `public_api.json` via `go run ./internal/tools/public_api_export.
 - `StateStore`
 - `StatefulRuntimeContext`
 - `StopReply`
+- `WarmupPolicy`
+- `WarmupPolicyAlwaysOn`
+- `WarmupPolicyLazy`
+- `WarmupPolicyPreload`

@@ -148,6 +148,8 @@ type RuntimeContextImpl struct {
 	emitter         Emitter
 	health          HealthReporter
 	stateMgr        StateManager
+	connector       ConnectorClient
+	resourceEvents  <-chan ResourceStatusEvent
 	savePluginRPCCB func(client *PluginRPCClient)
 }
 
@@ -164,8 +166,16 @@ func (r *RuntimeContextImpl) Health() HealthReporter {
 	return r.health
 }
 
-func (r *RuntimeContextImpl) Context() context.Context { return r.ctx }
-func (r *RuntimeContextImpl) State() StateManager      { return r.stateMgr }
+func (r *RuntimeContextImpl) Connector() ConnectorClient {
+	if r.connector == nil {
+		r.connector = internalruntime.NewNoopConnectorClient()
+	}
+	return r.connector
+}
+
+func (r *RuntimeContextImpl) ResourceEvents() <-chan ResourceStatusEvent { return r.resourceEvents }
+func (r *RuntimeContextImpl) Context() context.Context                   { return r.ctx }
+func (r *RuntimeContextImpl) State() StateManager                        { return r.stateMgr }
 
 func (r *RuntimeContextImpl) SavePluginRPCClient(client *PluginRPCClient) {
 	if r.savePluginRPCCB != nil {

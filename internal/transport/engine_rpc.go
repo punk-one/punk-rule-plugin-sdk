@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"errors"
 	"fmt"
 	"net/rpc"
 	"time"
@@ -117,6 +118,37 @@ func (c *EngineRPCClient) SetStateWithTTL(key string, value []byte, ttl time.Dur
 func (c *EngineRPCClient) DeleteState(key string) error {
 	var reply struct{}
 	return c.client.Call("Engine.DeleteStateRPC", &StateKeyArgs{Key: key}, &reply)
+}
+
+func (c *EngineRPCClient) ExecuteConnector(req core.ConnectorRequest) (core.ConnectorResponse, error) {
+	var reply ConnectorExecuteReply
+	if err := c.client.Call("Engine.ConnectorExecuteRPC", &req, &reply); err != nil {
+		return core.ConnectorResponse{}, err
+	}
+	if reply.Error != "" {
+		return core.ConnectorResponse{}, errors.New(reply.Error)
+	}
+	return reply.Response, nil
+}
+
+func (c *EngineRPCClient) CurrentResourceStatus(resourceRef string) (core.ResourceStatusEvent, bool) {
+	var reply CurrentResourceStatusReply
+	if err := c.client.Call("Engine.CurrentResourceStatusRPC", &CurrentResourceStatusArgs{
+		ResourceRef: resourceRef,
+	}, &reply); err != nil {
+		return core.ResourceStatusEvent{}, false
+	}
+	return reply.Event, reply.Found
+}
+
+func (c *EngineRPCClient) NextResourceEvent(timeout time.Duration) (core.ResourceStatusEvent, bool, error) {
+	var reply NextResourceEventReply
+	if err := c.client.Call("Engine.NextResourceEventRPC", &NextResourceEventArgs{
+		TimeoutMS: int(timeout / time.Millisecond),
+	}, &reply); err != nil {
+		return core.ResourceStatusEvent{}, false, err
+	}
+	return reply.Event, reply.OK, nil
 }
 
 var _ runtime.EngineBridge = (*EngineRPCClient)(nil)

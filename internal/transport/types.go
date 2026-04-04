@@ -63,3 +63,58 @@ type ReceiveEventReply struct{ Error string }
 type ReceiveEventsArgs struct{ EventsJSON []byte }
 type ReceiveEventsReply struct{ Error string }
 type StopReply struct{ Error string }
+
+type CurrentResourceStatusArgs struct {
+	ResourceRef string
+}
+
+type CurrentResourceStatusReply struct {
+	Event core.ResourceStatusEvent
+	Found bool
+}
+
+type NextResourceEventArgs struct {
+	TimeoutMS int
+}
+
+type NextResourceEventReply struct {
+	Event core.ResourceStatusEvent
+	OK    bool
+}
+
+type ConnectorCreateResourceArgs struct {
+	Resource core.ConnectorResource
+}
+
+type ConnectorCreateResourceReply struct {
+	Handle string
+	Error  string
+}
+
+type ConnectorDestroyResourceArgs struct {
+	ProviderHandle string
+}
+
+type ConnectorDestroyResourceReply struct {
+	Error string
+}
+
+type ConnectorExecuteArgs struct {
+	ProviderHandle string
+	Request        core.ConnectorRequest
+}
+
+type ConnectorExecuteReply struct {
+	Response core.ConnectorResponse
+	Error    string
+}
+
+type ConnectorProbeArgs struct {
+	ProviderHandle string
+	Request        core.ConnectorRequest
+}
+
+type ConnectorProbeReply struct {
+	Event core.ResourceStatusEvent
+	Error string
+}
