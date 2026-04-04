@@ -13,7 +13,9 @@ Generated from `public_api.json` via `go run ./internal/tools/public_api_export.
     "AckStatusSuccess",
     "BasePlugin",
     "BuiltinRuntimeContext",
+    "ConnectorBindingSpec",
     "ConnectorClient",
+    "ConnectorDescriptor",
     "ConnectorPlugin",
     "ConnectorRPC",
     "ConnectorRPCClient",
@@ -160,7 +162,9 @@ Generated from `public_api.json` via `go run ./internal/tools/public_api_export.
 - `AckStatusSuccess`
 - `BasePlugin`
 - `BuiltinRuntimeContext`
+- `ConnectorBindingSpec`
 - `ConnectorClient`
+- `ConnectorDescriptor`
 - `ConnectorPlugin`
 - `ConnectorRPC`
 - `ConnectorRPCClient`

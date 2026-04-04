@@ -20,6 +20,8 @@ const (
 
 type PluginInfo = core.PluginInfo
 type PluginCapabilities = core.PluginCapabilities
+type ConnectorDescriptor = core.ConnectorDescriptor
+type ConnectorBindingSpec = core.ConnectorBindingSpec
 type PluginConfig = core.PluginConfig
 type ConnectorClient = core.ConnectorClient
 type ConnectorResource = core.ConnectorResource

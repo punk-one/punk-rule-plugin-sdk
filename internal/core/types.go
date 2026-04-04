@@ -23,13 +23,28 @@ type PluginInfo struct {
 	Capabilities PluginCapabilities `json:"capabilities"`
 }
 
+type ConnectorDescriptor struct {
+	Family        string   `json:"family"`
+	Label         string   `json:"label,omitempty"`
+	Capabilities  []string `json:"capabilities,omitempty"`
+	DisplayFields []string `json:"display_fields,omitempty"`
+}
+
+type ConnectorBindingSpec struct {
+	Required             bool     `json:"required,omitempty"`
+	AcceptedFamilies     []string `json:"accepted_families,omitempty"`
+	RequiredCapabilities []string `json:"required_capabilities,omitempty"`
+}
+
 type PluginCapabilities struct {
-	InputPorts   int    `json:"input_ports"`
-	OutputPorts  int    `json:"output_ports"`
-	SupportBatch bool   `json:"support_batch"`
-	SupportAck   bool   `json:"support_ack"`
-	ConfigSchema string `json:"config_schema"`
-	Stateful     bool   `json:"stateful"`
+	InputPorts          int                   `json:"input_ports"`
+	OutputPorts         int                   `json:"output_ports"`
+	SupportBatch        bool                  `json:"support_batch"`
+	SupportAck          bool                  `json:"support_ack"`
+	ConfigSchema        string                `json:"config_schema"`
+	Stateful            bool                  `json:"stateful"`
+	ConnectorDescriptor *ConnectorDescriptor  `json:"connector_descriptor,omitempty"`
+	ConnectorBinding    *ConnectorBindingSpec `json:"connector_binding,omitempty"`
 }
 
 type PluginConfig struct {

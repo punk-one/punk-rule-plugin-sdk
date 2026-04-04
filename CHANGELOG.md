@@ -2,6 +2,27 @@
 
 本文档记录 `punk-rule-plugin-sdk` 自 `v1.5.x` 以来的重要公共 API 与工程结构演进。
 
+## v1.7.1 - 2026-04-04
+
+### Added
+
+- 新增 connector 契约公开类型：
+  - `ConnectorDescriptor`
+  - `ConnectorBindingSpec`
+
+### Changed
+
+- `PluginCapabilities` 新增两个可选字段：
+  - `ConnectorDescriptor *ConnectorDescriptor`
+  - `ConnectorBinding *ConnectorBindingSpec`
+- README 已补充 connector family / capability / binding 的正式声明示例。
+- `PUBLIC_API` 基线已扩展到 connector compatibility contract。
+
+### Validation
+
+- `go generate ./...`
+- `go test ./...`
+
 ## v1.7.0 - 2026-04-04
 
 ### Added

@@ -23,7 +23,7 @@ go get github.com/punk-one/punk-rule-plugin-sdk@latest
 发布正式版本后，推荐显式指定 tag：
 
 ```bash
-go get github.com/punk-one/punk-rule-plugin-sdk@v1.7.0
+go get github.com/punk-one/punk-rule-plugin-sdk@v1.7.1
 ```
 
 ## 目录结构
@@ -81,7 +81,7 @@ func (p *MyProcessor) Info() sdk.PluginInfo {
     return sdk.PluginInfo{
         ID:      "my-processor",
         Name:    "My Processor",
-        Version: "1.7.0",
+        Version: "1.7.1",
         Type:    sdk.PluginTypeProcessor,
         Capabilities: sdk.PluginCapabilities{
             SupportBatch: true, // 声明支持批量处理
@@ -137,8 +137,15 @@ func (c *MyConnector) Info() sdk.PluginInfo {
     return sdk.PluginInfo{
         ID:      "connect-demo",
         Name:    "Demo Connector",
-        Version: "1.7.0",
+        Version: "1.7.1",
         Type:    sdk.PluginTypeConnector,
+        Capabilities: sdk.PluginCapabilities{
+            ConnectorDescriptor: &sdk.ConnectorDescriptor{
+                Family:       "demo",
+                Label:        "Demo Connector",
+                Capabilities: []string{"read", "write", "shared_duplex"},
+            },
+        },
     }
 }
 
@@ -257,6 +264,53 @@ _ = resource.SetHealthPolicy(sdk.HealthPolicy{
     Target:     "health",
     Priority:   "high",
 })
+
+### Connector 契约声明
+
+对于 connector-aware 2.x 架构，建议插件在 `PluginCapabilities` 中显式声明 connector family 和绑定要求：
+
+```go
+func (s *S7Source) Info() sdk.PluginInfo {
+    return sdk.PluginInfo{
+        ID:      "source-s7",
+        Name:    "S7 Source",
+        Version: "1.1.0",
+        Type:    sdk.PluginTypeSource,
+        Capabilities: sdk.PluginCapabilities{
+            ConfigSchema: sourceSchema,
+            ConnectorBinding: &sdk.ConnectorBindingSpec{
+                Required:             true,
+                AcceptedFamilies:     []string{"s7"},
+                RequiredCapabilities: []string{"read"},
+            },
+        },
+    }
+}
+
+func (c *S7Connector) Info() sdk.PluginInfo {
+    return sdk.PluginInfo{
+        ID:      "connect-s7",
+        Name:    "Connector Siemens S7",
+        Version: "1.1.0",
+        Type:    sdk.PluginTypeConnector,
+        Capabilities: sdk.PluginCapabilities{
+            ConfigSchema: connectorSchema,
+            ConnectorDescriptor: &sdk.ConnectorDescriptor{
+                Family:        "s7",
+                Label:         "Siemens S7",
+                Capabilities:  []string{"read", "write", "shared_duplex", "split_rw"},
+                DisplayFields: []string{"host", "port", "rack", "slot"},
+            },
+        },
+    }
+}
+```
+
+推荐约定：
+
+- `ConnectorDescriptor` 由 `connect-*` 插件声明自身的 family、可用能力和连接摘要字段。
+- `ConnectorBindingSpec` 由 `source-*` / `sink-*` 插件声明其需要的 connector family 和 capability。
+- 引擎与 UI 应优先依据这两个结构做兼容性过滤和强校验，而不是依赖字符串约定。
 
 _ = resource.SetQuotaPolicy(sdk.QuotaPolicy{
     MaxInflightRequests: 16,
