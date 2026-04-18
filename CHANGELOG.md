@@ -2,6 +2,42 @@
 
 本文档记录 `punk-rule-plugin-sdk` 自 `v1.5.x` 以来的重要公共 API 与工程结构演进。
 
+## v1.7.2 - 2026-04-18
+
+### Added
+
+- 新增通用流式 connector 会话公共模型：
+  - `StreamConsumer`
+  - `StreamOpenRequest`
+  - `StreamOpenResponse`
+  - `StreamReceiveRequest`
+  - `StreamReceiveResponse`
+  - `StreamMessage`
+  - `StreamAckRequest`
+  - `StreamNackRequest`
+  - `StreamGrantCreditsRequest`
+  - `StreamCloseRequest`
+- 新增流式投递语义常量：
+  - `StreamDeliveryBestEffort`
+  - `StreamDeliveryAtLeastOnce`
+
+### Changed
+
+- `ConnectorClient` 现在支持 `OpenStream(...)`，用于 Source 插件消费原生事件流。
+- `ConnectorPlugin` 现在支持完整流式生命周期：
+  - `OpenStream`
+  - `ReceiveStream`
+  - `AckStream`
+  - `NackStream`
+  - `GrantCredits`
+  - `CloseStream`
+- Engine RPC / Connector RPC / RuntimeContext 已扩展流式桥接能力。
+- `PUBLIC_API` 基线已扩展到 connector stream contract。
+
+### Validation
+
+- `GOWORK=off go test ./...`
+
 ## v1.7.1 - 2026-04-04
 
 ### Added

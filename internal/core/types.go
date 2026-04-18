@@ -204,6 +204,75 @@ type ConnectorResponse struct {
 	RetryAfterMS int               `json:"retry_after_ms,omitempty"`
 }
 
+type StreamDeliverySemantics string
+
+const (
+	StreamDeliveryBestEffort  StreamDeliverySemantics = "best_effort"
+	StreamDeliveryAtLeastOnce StreamDeliverySemantics = "at_least_once"
+)
+
+type StreamOpenRequest struct {
+	ResourceRef    string            `json:"resource_ref,omitempty"`
+	SessionKey     string            `json:"session_key,omitempty"`
+	Target         string            `json:"target,omitempty"`
+	Payload        json.RawMessage   `json:"payload,omitempty"`
+	Priority       string            `json:"priority,omitempty"`
+	UsageWeight    int               `json:"usage_weight,omitempty"`
+	InitialCredits int               `json:"initial_credits,omitempty"`
+	Metadata       map[string]string `json:"metadata,omitempty"`
+}
+
+type StreamOpenResponse struct {
+	StreamID          string                  `json:"stream_id"`
+	DeliverySemantics StreamDeliverySemantics `json:"delivery_semantics,omitempty"`
+	InitialCredits    int                     `json:"initial_credits,omitempty"`
+}
+
+type StreamReceiveRequest struct {
+	StreamID      string `json:"stream_id"`
+	MaxMessages   int    `json:"max_messages,omitempty"`
+	WaitTimeoutMS int    `json:"wait_timeout_ms,omitempty"`
+}
+
+type StreamMessage struct {
+	StreamID            string            `json:"stream_id,omitempty"`
+	DeliveryID          string            `json:"delivery_id,omitempty"`
+	Sequence            uint64            `json:"sequence,omitempty"`
+	Topic               string            `json:"topic,omitempty"`
+	Key                 string            `json:"key,omitempty"`
+	RawPayload          []byte            `json:"raw_payload,omitempty"`
+	Metadata            map[string]string `json:"metadata,omitempty"`
+	PublishedAtUnixNano int64             `json:"published_at_unix_nano,omitempty"`
+}
+
+type StreamReceiveResponse struct {
+	Messages []StreamMessage `json:"messages,omitempty"`
+}
+
+type StreamAckRequest struct {
+	StreamID   string `json:"stream_id"`
+	DeliveryID string `json:"delivery_id"`
+	Credits    int    `json:"credits,omitempty"`
+}
+
+type StreamNackRequest struct {
+	StreamID   string `json:"stream_id"`
+	DeliveryID string `json:"delivery_id"`
+	Reason     string `json:"reason,omitempty"`
+	Requeue    bool   `json:"requeue,omitempty"`
+	Credits    int    `json:"credits,omitempty"`
+}
+
+type StreamGrantCreditsRequest struct {
+	StreamID string `json:"stream_id"`
+	Credits  int    `json:"credits"`
+}
+
+type StreamCloseRequest struct {
+	StreamID string `json:"stream_id"`
+	Reason   string `json:"reason,omitempty"`
+}
+
 type ResourceStatusEvent struct {
 	ResourceID         string            `json:"resource_id,omitempty"`
 	ProviderPluginID   string            `json:"provider_plugin_id,omitempty"`

@@ -24,10 +24,21 @@ type ConnectorDescriptor = core.ConnectorDescriptor
 type ConnectorBindingSpec = core.ConnectorBindingSpec
 type PluginConfig = core.PluginConfig
 type ConnectorClient = core.ConnectorClient
+type StreamConsumer = core.StreamConsumer
 type ConnectorResource = core.ConnectorResource
 type ConnectorRequest = core.ConnectorRequest
 type ConnectorRequestKind = core.ConnectorRequestKind
 type ConnectorResponse = core.ConnectorResponse
+type StreamDeliverySemantics = core.StreamDeliverySemantics
+type StreamOpenRequest = core.StreamOpenRequest
+type StreamOpenResponse = core.StreamOpenResponse
+type StreamReceiveRequest = core.StreamReceiveRequest
+type StreamReceiveResponse = core.StreamReceiveResponse
+type StreamMessage = core.StreamMessage
+type StreamAckRequest = core.StreamAckRequest
+type StreamNackRequest = core.StreamNackRequest
+type StreamGrantCreditsRequest = core.StreamGrantCreditsRequest
+type StreamCloseRequest = core.StreamCloseRequest
 type HealthPolicy = core.HealthPolicy
 type ProviderPolicy = core.ProviderPolicy
 type QuotaPolicy = core.QuotaPolicy
@@ -54,6 +65,9 @@ const (
 	ConnectorRequestBatchRead  = core.ConnectorRequestBatchRead
 	ConnectorRequestBatchWrite = core.ConnectorRequestBatchWrite
 	ConnectorRequestMetadata   = core.ConnectorRequestMetadata
+
+	StreamDeliveryBestEffort  = core.StreamDeliveryBestEffort
+	StreamDeliveryAtLeastOnce = core.StreamDeliveryAtLeastOnce
 )
 
 type LogLevel = core.LogLevel

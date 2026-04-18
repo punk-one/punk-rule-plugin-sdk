@@ -11,7 +11,7 @@ func TestPluginCapabilitiesConnectorContractJSON(t *testing.T) {
 	info := sdk.PluginInfo{
 		ID:      "source-s7",
 		Name:    "S7 Source",
-		Version: "1.7.1",
+		Version: "1.7.2",
 		Type:    sdk.PluginTypeSource,
 		Capabilities: sdk.PluginCapabilities{
 			ConfigSchema: `{"type":"object"}`,

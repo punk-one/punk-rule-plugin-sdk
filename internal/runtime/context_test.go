@@ -12,6 +12,12 @@ type engineBridgeStub struct {
 	counter     string
 	observation string
 	health      []core.ReportHealthArgs
+	streamOpenReq  core.StreamOpenRequest
+	streamRecvReq  core.StreamReceiveRequest
+	streamAckReq   core.StreamAckRequest
+	streamNackReq  core.StreamNackRequest
+	streamGrantReq core.StreamGrantCreditsRequest
+	streamCloseReq core.StreamCloseRequest
 }
 
 func newEngineBridgeStub() *engineBridgeStub {
@@ -52,6 +58,43 @@ func (s *engineBridgeStub) CurrentResourceStatus(resourceRef string) (core.Resou
 }
 func (s *engineBridgeStub) NextResourceEvent(timeout time.Duration) (core.ResourceStatusEvent, bool, error) {
 	return core.ResourceStatusEvent{}, false, nil
+}
+func (s *engineBridgeStub) OpenConnectorStream(req core.StreamOpenRequest) (core.StreamOpenResponse, error) {
+	s.streamOpenReq = req
+	return core.StreamOpenResponse{
+		StreamID:       "stream-1",
+		InitialCredits: req.InitialCredits,
+	}, nil
+}
+func (s *engineBridgeStub) ReceiveConnectorStream(req core.StreamReceiveRequest) (core.StreamReceiveResponse, error) {
+	s.streamRecvReq = req
+	return core.StreamReceiveResponse{
+		Messages: []core.StreamMessage{{
+			StreamID:            req.StreamID,
+			DeliveryID:          "delivery-1",
+			Sequence:            1,
+			Topic:               "factory/device-1/status",
+			RawPayload:          []byte(`{"value":42}`),
+			Metadata:            map[string]string{"mqtt_topic": "factory/device-1/status"},
+			PublishedAtUnixNano: 123,
+		}},
+	}, nil
+}
+func (s *engineBridgeStub) AckConnectorStream(req core.StreamAckRequest) error {
+	s.streamAckReq = req
+	return nil
+}
+func (s *engineBridgeStub) NackConnectorStream(req core.StreamNackRequest) error {
+	s.streamNackReq = req
+	return nil
+}
+func (s *engineBridgeStub) GrantConnectorStream(req core.StreamGrantCreditsRequest) error {
+	s.streamGrantReq = req
+	return nil
+}
+func (s *engineBridgeStub) CloseConnectorStream(req core.StreamCloseRequest) error {
+	s.streamCloseReq = req
+	return nil
 }
 
 func waitForHealthMessages(t *testing.T, stub *engineBridgeStub, expected int) []core.ReportHealthArgs {
@@ -165,5 +208,65 @@ func TestHealthReporterEmitsHeartbeat(t *testing.T) {
 	got := waitForHealthMessages(t, engine, 1)
 	if got[0].Kind != core.HealthKindHeartbeat {
 		t.Fatalf("expected heartbeat report, got %s", got[0].Kind)
+	}
+}
+
+func TestRuntimeContextConnectorStreamForwardsToEngineBridge(t *testing.T) {
+	engine := newEngineBridgeStub()
+	ctx := NewPluginRuntimeContext(engine, "rule-stream", "source-mqtt", core.DefaultHealthOptions(), nil)
+
+	stream, err := ctx.Connector().OpenStream(core.StreamOpenRequest{
+		ResourceRef:    "mqtt-1",
+		Target:         "messages",
+		InitialCredits: 8,
+		Payload:        []byte(`{"topics":["factory/#"]}`),
+	})
+	if err != nil {
+		t.Fatalf("OpenStream failed: %v", err)
+	}
+	if engine.streamOpenReq.ResourceRef != "mqtt-1" || engine.streamOpenReq.InitialCredits != 8 {
+		t.Fatalf("unexpected open request: %#v", engine.streamOpenReq)
+	}
+
+	message, ok, err := stream.Recv(250 * time.Millisecond)
+	if err != nil {
+		t.Fatalf("Recv failed: %v", err)
+	}
+	if !ok {
+		t.Fatal("expected a stream message")
+	}
+	if engine.streamRecvReq.StreamID != "stream-1" {
+		t.Fatalf("unexpected recv request: %#v", engine.streamRecvReq)
+	}
+	if message.DeliveryID != "delivery-1" {
+		t.Fatalf("unexpected stream message: %#v", message)
+	}
+
+	if err := stream.Ack("delivery-1", 2); err != nil {
+		t.Fatalf("Ack failed: %v", err)
+	}
+	if engine.streamAckReq.StreamID != "stream-1" || engine.streamAckReq.Credits != 2 {
+		t.Fatalf("unexpected ack request: %#v", engine.streamAckReq)
+	}
+
+	if err := stream.Nack("delivery-2", false, "decode_failed", 1); err != nil {
+		t.Fatalf("Nack failed: %v", err)
+	}
+	if engine.streamNackReq.StreamID != "stream-1" || engine.streamNackReq.Credits != 1 {
+		t.Fatalf("unexpected nack request: %#v", engine.streamNackReq)
+	}
+
+	if err := stream.GrantCredits(4); err != nil {
+		t.Fatalf("GrantCredits failed: %v", err)
+	}
+	if engine.streamGrantReq.StreamID != "stream-1" || engine.streamGrantReq.Credits != 4 {
+		t.Fatalf("unexpected grant request: %#v", engine.streamGrantReq)
+	}
+
+	if err := stream.Close(); err != nil {
+		t.Fatalf("Close failed: %v", err)
+	}
+	if engine.streamCloseReq.StreamID != "stream-1" {
+		t.Fatalf("unexpected close request: %#v", engine.streamCloseReq)
 	}
 }

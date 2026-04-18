@@ -146,6 +146,19 @@ Generated from `public_api.json` via `go run ./internal/tools/public_api_export.
     "StateStore",
     "StatefulRuntimeContext",
     "StopReply",
+    "StreamAckRequest",
+    "StreamCloseRequest",
+    "StreamConsumer",
+    "StreamDeliveryAtLeastOnce",
+    "StreamDeliveryBestEffort",
+    "StreamDeliverySemantics",
+    "StreamGrantCreditsRequest",
+    "StreamMessage",
+    "StreamNackRequest",
+    "StreamOpenRequest",
+    "StreamOpenResponse",
+    "StreamReceiveRequest",
+    "StreamReceiveResponse",
     "WarmupPolicy",
     "WarmupPolicyAlwaysOn",
     "WarmupPolicyLazy",
@@ -295,6 +308,19 @@ Generated from `public_api.json` via `go run ./internal/tools/public_api_export.
 - `StateStore`
 - `StatefulRuntimeContext`
 - `StopReply`
+- `StreamAckRequest`
+- `StreamCloseRequest`
+- `StreamConsumer`
+- `StreamDeliveryAtLeastOnce`
+- `StreamDeliveryBestEffort`
+- `StreamDeliverySemantics`
+- `StreamGrantCreditsRequest`
+- `StreamMessage`
+- `StreamNackRequest`
+- `StreamOpenRequest`
+- `StreamOpenResponse`
+- `StreamReceiveRequest`
+- `StreamReceiveResponse`
 - `WarmupPolicy`
 - `WarmupPolicyAlwaysOn`
 - `WarmupPolicyLazy`

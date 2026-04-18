@@ -100,6 +100,25 @@ func (s *engineRPCStub) NextResourceEvent(timeout time.Duration) (sdk.ResourceSt
 	return sdk.ResourceStatusEvent{}, false, nil
 }
 
+func (s *engineRPCStub) OpenConnectorStream(req sdk.StreamOpenRequest) (sdk.StreamOpenResponse, error) {
+	return sdk.StreamOpenResponse{}, nil
+}
+
+func (s *engineRPCStub) ReceiveConnectorStream(req sdk.StreamReceiveRequest) (sdk.StreamReceiveResponse, error) {
+	return sdk.StreamReceiveResponse{}, nil
+}
+
+func (s *engineRPCStub) AckConnectorStream(req sdk.StreamAckRequest) error { return nil }
+
+func (s *engineRPCStub) NackConnectorStream(req sdk.StreamNackRequest) error { return nil }
+
+func (s *engineRPCStub) GrantConnectorStream(req sdk.StreamGrantCreditsRequest) error {
+	return nil
+}
+
+func (s *engineRPCStub) CloseConnectorStream(req sdk.StreamCloseRequest) error { return nil }
+
+
 type stateStoreStub struct {
 	state map[string][]byte
 }

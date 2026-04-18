@@ -41,11 +41,21 @@ type StateStore interface {
 	DeleteState(ctx context.Context, key string) error
 }
 
+type StreamConsumer interface {
+	ID() string
+	Recv(timeout time.Duration) (StreamMessage, bool, error)
+	Ack(deliveryID string, credits int) error
+	Nack(deliveryID string, requeue bool, reason string, credits int) error
+	GrantCredits(credits int) error
+	Close() error
+}
+
 type ConnectorClient interface {
 	Read(req ConnectorRequest) (ConnectorResponse, error)
 	Write(req ConnectorRequest) (ConnectorResponse, error)
 	BatchRead(req ConnectorRequest) (ConnectorResponse, error)
 	BatchWrite(req ConnectorRequest) (ConnectorResponse, error)
+	OpenStream(req StreamOpenRequest) (StreamConsumer, error)
 	CurrentStatus(resourceRef string) (ResourceStatusEvent, bool)
 }
 
@@ -74,6 +84,12 @@ type ConnectorPlugin interface {
 	CreateResource(resource ConnectorResource) (string, error)
 	DestroyResource(providerHandle string) error
 	Execute(providerHandle string, req ConnectorRequest) (ConnectorResponse, error)
+	OpenStream(providerHandle string, req StreamOpenRequest) (StreamOpenResponse, error)
+	ReceiveStream(providerHandle string, req StreamReceiveRequest) (StreamReceiveResponse, error)
+	AckStream(providerHandle string, req StreamAckRequest) error
+	NackStream(providerHandle string, req StreamNackRequest) error
+	GrantCredits(providerHandle string, req StreamGrantCreditsRequest) error
+	CloseStream(providerHandle string, req StreamCloseRequest) error
 	Probe(providerHandle string, req ConnectorRequest) (ResourceStatusEvent, error)
 	Stop() error
 }

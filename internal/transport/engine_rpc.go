@@ -131,6 +131,72 @@ func (c *EngineRPCClient) ExecuteConnector(req core.ConnectorRequest) (core.Conn
 	return reply.Response, nil
 }
 
+func (c *EngineRPCClient) OpenConnectorStream(req core.StreamOpenRequest) (core.StreamOpenResponse, error) {
+	var reply ConnectorOpenStreamReply
+	if err := c.client.Call("Engine.ConnectorOpenStreamRPC", &req, &reply); err != nil {
+		return core.StreamOpenResponse{}, err
+	}
+	if reply.Error != "" {
+		return core.StreamOpenResponse{}, errors.New(reply.Error)
+	}
+	return reply.Response, nil
+}
+
+func (c *EngineRPCClient) ReceiveConnectorStream(req core.StreamReceiveRequest) (core.StreamReceiveResponse, error) {
+	var reply ConnectorReceiveStreamReply
+	if err := c.client.Call("Engine.ConnectorReceiveStreamRPC", &req, &reply); err != nil {
+		return core.StreamReceiveResponse{}, err
+	}
+	if reply.Error != "" {
+		return core.StreamReceiveResponse{}, errors.New(reply.Error)
+	}
+	return reply.Response, nil
+}
+
+func (c *EngineRPCClient) AckConnectorStream(req core.StreamAckRequest) error {
+	var reply ConnectorAckStreamReply
+	if err := c.client.Call("Engine.ConnectorAckStreamRPC", &req, &reply); err != nil {
+		return err
+	}
+	if reply.Error != "" {
+		return errors.New(reply.Error)
+	}
+	return nil
+}
+
+func (c *EngineRPCClient) NackConnectorStream(req core.StreamNackRequest) error {
+	var reply ConnectorNackStreamReply
+	if err := c.client.Call("Engine.ConnectorNackStreamRPC", &req, &reply); err != nil {
+		return err
+	}
+	if reply.Error != "" {
+		return errors.New(reply.Error)
+	}
+	return nil
+}
+
+func (c *EngineRPCClient) GrantConnectorStream(req core.StreamGrantCreditsRequest) error {
+	var reply ConnectorGrantCreditsReply
+	if err := c.client.Call("Engine.ConnectorGrantCreditsRPC", &req, &reply); err != nil {
+		return err
+	}
+	if reply.Error != "" {
+		return errors.New(reply.Error)
+	}
+	return nil
+}
+
+func (c *EngineRPCClient) CloseConnectorStream(req core.StreamCloseRequest) error {
+	var reply ConnectorCloseStreamReply
+	if err := c.client.Call("Engine.ConnectorCloseStreamRPC", &req, &reply); err != nil {
+		return err
+	}
+	if reply.Error != "" {
+		return errors.New(reply.Error)
+	}
+	return nil
+}
+
 func (c *EngineRPCClient) CurrentResourceStatus(resourceRef string) (core.ResourceStatusEvent, bool) {
 	var reply CurrentResourceStatusReply
 	if err := c.client.Call("Engine.CurrentResourceStatusRPC", &CurrentResourceStatusArgs{

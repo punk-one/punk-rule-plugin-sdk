@@ -23,7 +23,7 @@ go get github.com/punk-one/punk-rule-plugin-sdk@latest
 发布正式版本后，推荐显式指定 tag：
 
 ```bash
-go get github.com/punk-one/punk-rule-plugin-sdk@v1.7.1
+go get github.com/punk-one/punk-rule-plugin-sdk@v1.7.2
 ```
 
 ## 目录结构
@@ -81,7 +81,7 @@ func (p *MyProcessor) Info() sdk.PluginInfo {
     return sdk.PluginInfo{
         ID:      "my-processor",
         Name:    "My Processor",
-        Version: "1.7.1",
+        Version: "1.7.2",
         Type:    sdk.PluginTypeProcessor,
         Capabilities: sdk.PluginCapabilities{
             SupportBatch: true, // 声明支持批量处理
@@ -137,7 +137,7 @@ func (c *MyConnector) Info() sdk.PluginInfo {
     return sdk.PluginInfo{
         ID:      "connect-demo",
         Name:    "Demo Connector",
-        Version: "1.7.1",
+        Version: "1.7.2",
         Type:    sdk.PluginTypeConnector,
         Capabilities: sdk.PluginCapabilities{
             ConnectorDescriptor: &sdk.ConnectorDescriptor{
@@ -157,6 +157,30 @@ func (c *MyConnector) DestroyResource(providerHandle string) error { return nil 
 
 func (c *MyConnector) Execute(providerHandle string, req sdk.ConnectorRequest) (sdk.ConnectorResponse, error) {
     return sdk.ConnectorResponse{}, nil
+}
+
+func (c *MyConnector) OpenStream(providerHandle string, req sdk.StreamOpenRequest) (sdk.StreamOpenResponse, error) {
+    return sdk.StreamOpenResponse{}, sdk.ErrNotImplemented
+}
+
+func (c *MyConnector) ReceiveStream(providerHandle string, req sdk.StreamReceiveRequest) (sdk.StreamReceiveResponse, error) {
+    return sdk.StreamReceiveResponse{}, sdk.ErrNotImplemented
+}
+
+func (c *MyConnector) AckStream(providerHandle string, req sdk.StreamAckRequest) error {
+    return sdk.ErrNotImplemented
+}
+
+func (c *MyConnector) NackStream(providerHandle string, req sdk.StreamNackRequest) error {
+    return sdk.ErrNotImplemented
+}
+
+func (c *MyConnector) GrantCredits(providerHandle string, req sdk.StreamGrantCreditsRequest) error {
+    return sdk.ErrNotImplemented
+}
+
+func (c *MyConnector) CloseStream(providerHandle string, req sdk.StreamCloseRequest) error {
+    return sdk.ErrNotImplemented
 }
 
 func (c *MyConnector) Probe(providerHandle string, req sdk.ConnectorRequest) (sdk.ResourceStatusEvent, error) {

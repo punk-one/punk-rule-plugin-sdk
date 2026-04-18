@@ -109,6 +109,62 @@ type ConnectorExecuteReply struct {
 	Error    string
 }
 
+type ConnectorOpenStreamArgs struct {
+	ProviderHandle string
+	Request        core.StreamOpenRequest
+}
+
+type ConnectorOpenStreamReply struct {
+	Response core.StreamOpenResponse
+	Error    string
+}
+
+type ConnectorReceiveStreamArgs struct {
+	ProviderHandle string
+	Request        core.StreamReceiveRequest
+}
+
+type ConnectorReceiveStreamReply struct {
+	Response core.StreamReceiveResponse
+	Error    string
+}
+
+type ConnectorAckStreamArgs struct {
+	ProviderHandle string
+	Request        core.StreamAckRequest
+}
+
+type ConnectorAckStreamReply struct {
+	Error string
+}
+
+type ConnectorNackStreamArgs struct {
+	ProviderHandle string
+	Request        core.StreamNackRequest
+}
+
+type ConnectorNackStreamReply struct {
+	Error string
+}
+
+type ConnectorGrantCreditsArgs struct {
+	ProviderHandle string
+	Request        core.StreamGrantCreditsRequest
+}
+
+type ConnectorGrantCreditsReply struct {
+	Error string
+}
+
+type ConnectorCloseStreamArgs struct {
+	ProviderHandle string
+	Request        core.StreamCloseRequest
+}
+
+type ConnectorCloseStreamReply struct {
+	Error string
+}
+
 type ConnectorProbeArgs struct {
 	ProviderHandle string
 	Request        core.ConnectorRequest
