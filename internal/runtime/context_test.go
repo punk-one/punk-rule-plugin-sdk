@@ -8,16 +8,17 @@ import (
 )
 
 type engineBridgeStub struct {
-	state       map[string][]byte
-	counter     string
-	observation string
-	health      []core.ReportHealthArgs
-	streamOpenReq  core.StreamOpenRequest
-	streamRecvReq  core.StreamReceiveRequest
-	streamAckReq   core.StreamAckRequest
-	streamNackReq  core.StreamNackRequest
-	streamGrantReq core.StreamGrantCreditsRequest
-	streamCloseReq core.StreamCloseRequest
+	state           map[string][]byte
+	counter         string
+	observation     string
+	health          []core.ReportHealthArgs
+	streamOpenReq   core.StreamOpenRequest
+	streamRecvReqs  []core.StreamReceiveRequest
+	streamAckReq    core.StreamAckRequest
+	streamNackReq   core.StreamNackRequest
+	streamGrantReq  core.StreamGrantCreditsRequest
+	streamCloseReq  core.StreamCloseRequest
+	streamRecvCalls int
 }
 
 func newEngineBridgeStub() *engineBridgeStub {
@@ -67,18 +68,26 @@ func (s *engineBridgeStub) OpenConnectorStream(req core.StreamOpenRequest) (core
 	}, nil
 }
 func (s *engineBridgeStub) ReceiveConnectorStream(req core.StreamReceiveRequest) (core.StreamReceiveResponse, error) {
-	s.streamRecvReq = req
-	return core.StreamReceiveResponse{
-		Messages: []core.StreamMessage{{
+	s.streamRecvCalls++
+	s.streamRecvReqs = append(s.streamRecvReqs, req)
+
+	limit := req.MaxMessages
+	if limit <= 0 {
+		limit = 1
+	}
+	messages := make([]core.StreamMessage, 0, limit)
+	for i := 0; i < limit; i++ {
+		messages = append(messages, core.StreamMessage{
 			StreamID:            req.StreamID,
-			DeliveryID:          "delivery-1",
-			Sequence:            1,
+			DeliveryID:          "delivery-" + string(rune('1'+i)),
+			Sequence:            uint64(i + 1),
 			Topic:               "factory/device-1/status",
 			RawPayload:          []byte(`{"value":42}`),
 			Metadata:            map[string]string{"mqtt_topic": "factory/device-1/status"},
 			PublishedAtUnixNano: 123,
-		}},
-	}, nil
+		})
+	}
+	return core.StreamReceiveResponse{Messages: messages}, nil
 }
 func (s *engineBridgeStub) AckConnectorStream(req core.StreamAckRequest) error {
 	s.streamAckReq = req
@@ -216,16 +225,26 @@ func TestRuntimeContextConnectorStreamForwardsToEngineBridge(t *testing.T) {
 	ctx := NewPluginRuntimeContext(engine, "rule-stream", "source-mqtt", core.DefaultHealthOptions(), nil)
 
 	stream, err := ctx.Connector().OpenStream(core.StreamOpenRequest{
-		ResourceRef:    "mqtt-1",
-		Target:         "messages",
-		InitialCredits: 8,
-		Payload:        []byte(`{"topics":["factory/#"]}`),
+		ResourceRef:         "mqtt-1",
+		Target:              "messages",
+		InitialCredits:      8,
+		MaxBufferedMessages: 256,
+		OverflowPolicy:      "drop_oldest",
+		AckTimeoutMS:        90000,
+		MaxDeliverBatch:     4,
+		Payload:             []byte(`{"topics":["factory/#"]}`),
 	})
 	if err != nil {
 		t.Fatalf("OpenStream failed: %v", err)
 	}
 	if engine.streamOpenReq.ResourceRef != "mqtt-1" || engine.streamOpenReq.InitialCredits != 8 {
 		t.Fatalf("unexpected open request: %#v", engine.streamOpenReq)
+	}
+	if engine.streamOpenReq.MaxBufferedMessages != 256 || engine.streamOpenReq.OverflowPolicy != "drop_oldest" {
+		t.Fatalf("unexpected stream options: %#v", engine.streamOpenReq)
+	}
+	if engine.streamOpenReq.AckTimeoutMS != 90000 || engine.streamOpenReq.MaxDeliverBatch != 4 {
+		t.Fatalf("unexpected stream delivery options: %#v", engine.streamOpenReq)
 	}
 
 	message, ok, err := stream.Recv(250 * time.Millisecond)
@@ -235,11 +254,24 @@ func TestRuntimeContextConnectorStreamForwardsToEngineBridge(t *testing.T) {
 	if !ok {
 		t.Fatal("expected a stream message")
 	}
-	if engine.streamRecvReq.StreamID != "stream-1" {
-		t.Fatalf("unexpected recv request: %#v", engine.streamRecvReq)
+	if len(engine.streamRecvReqs) != 1 || engine.streamRecvReqs[0].StreamID != "stream-1" {
+		t.Fatalf("unexpected recv requests: %#v", engine.streamRecvReqs)
+	}
+	if engine.streamRecvReqs[0].MaxMessages != 4 {
+		t.Fatalf("expected batched receive size 4, got %#v", engine.streamRecvReqs[0])
 	}
 	if message.DeliveryID != "delivery-1" {
 		t.Fatalf("unexpected stream message: %#v", message)
+	}
+	second, ok, err := stream.Recv(250 * time.Millisecond)
+	if err != nil {
+		t.Fatalf("second Recv failed: %v", err)
+	}
+	if !ok || second.DeliveryID != "delivery-2" {
+		t.Fatalf("expected buffered second message, got %#v", second)
+	}
+	if engine.streamRecvCalls != 1 {
+		t.Fatalf("expected buffered receive to use one bridge call, got %d", engine.streamRecvCalls)
 	}
 
 	if err := stream.Ack("delivery-1", 2); err != nil {

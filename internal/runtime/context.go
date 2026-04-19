@@ -55,9 +55,11 @@ type engineConnectorClient struct {
 }
 
 type engineStreamConsumer struct {
-	engine    EngineBridge
-	streamID  string
-	closeOnce bool
+	engine          EngineBridge
+	streamID        string
+	maxDeliverBatch int
+	buffer          []core.StreamMessage
+	closeOnce       bool
 }
 
 func NewNoopConnectorClient() core.ConnectorClient {
@@ -122,9 +124,14 @@ func (c engineConnectorClient) OpenStream(req core.StreamOpenRequest) (core.Stre
 	if err != nil {
 		return nil, err
 	}
+	batchSize := req.MaxDeliverBatch
+	if batchSize <= 0 {
+		batchSize = 1
+	}
 	return &engineStreamConsumer{
-		engine:   c.engine,
-		streamID: resp.StreamID,
+		engine:          c.engine,
+		streamID:        resp.StreamID,
+		maxDeliverBatch: batchSize,
 	}, nil
 }
 
@@ -157,9 +164,18 @@ func (c *engineStreamConsumer) Recv(timeout time.Duration) (core.StreamMessage, 
 	if c == nil || c.engine == nil {
 		return core.StreamMessage{}, false, errors.New("engine stream bridge is not available")
 	}
+	if len(c.buffer) > 0 {
+		message := c.buffer[0]
+		c.buffer = c.buffer[1:]
+		return message, true, nil
+	}
+	maxMessages := c.maxDeliverBatch
+	if maxMessages <= 0 {
+		maxMessages = 1
+	}
 	resp, err := c.engine.ReceiveConnectorStream(core.StreamReceiveRequest{
 		StreamID:      c.streamID,
-		MaxMessages:   1,
+		MaxMessages:   maxMessages,
 		WaitTimeoutMS: int(timeout / time.Millisecond),
 	})
 	if err != nil {
@@ -167,6 +183,9 @@ func (c *engineStreamConsumer) Recv(timeout time.Duration) (core.StreamMessage, 
 	}
 	if len(resp.Messages) == 0 {
 		return core.StreamMessage{}, false, nil
+	}
+	if len(resp.Messages) > 1 {
+		c.buffer = append(c.buffer[:0], resp.Messages[1:]...)
 	}
 	return resp.Messages[0], true, nil
 }

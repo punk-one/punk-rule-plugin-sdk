@@ -2,6 +2,28 @@
 
 本文档记录 `punk-rule-plugin-sdk` 自 `v1.5.x` 以来的重要公共 API 与工程结构演进。
 
+## v1.7.3 - 2026-04-19
+
+### Added
+
+- `StreamOpenRequest` 新增通用流控字段：
+  - `MaxBufferedMessages`
+  - `OverflowPolicy`
+  - `AckTimeoutMS`
+  - `MaxDeliverBatch`
+
+### Changed
+
+- RuntimeContext 的 connector stream consumer 现在支持按 `MaxDeliverBatch` 批量接收并在本地缓冲，减少高频 Source 的 RPC 往返开销。
+- 流式 connector 的公共契约现在明确区分：
+  - ingress/backlog
+  - delivery credits
+  - overflow policy
+
+### Validation
+
+- `go test ./internal/runtime`
+
 ## v1.7.2 - 2026-04-18
 
 ### Added

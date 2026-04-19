@@ -23,7 +23,7 @@ go get github.com/punk-one/punk-rule-plugin-sdk@latest
 发布正式版本后，推荐显式指定 tag：
 
 ```bash
-go get github.com/punk-one/punk-rule-plugin-sdk@v1.7.2
+go get github.com/punk-one/punk-rule-plugin-sdk@v1.7.3
 ```
 
 ## 目录结构
@@ -81,7 +81,7 @@ func (p *MyProcessor) Info() sdk.PluginInfo {
     return sdk.PluginInfo{
         ID:      "my-processor",
         Name:    "My Processor",
-        Version: "1.7.2",
+        Version: "1.7.3",
         Type:    sdk.PluginTypeProcessor,
         Capabilities: sdk.PluginCapabilities{
             SupportBatch: true, // 声明支持批量处理
@@ -137,7 +137,7 @@ func (c *MyConnector) Info() sdk.PluginInfo {
     return sdk.PluginInfo{
         ID:      "connect-demo",
         Name:    "Demo Connector",
-        Version: "1.7.2",
+        Version: "1.7.3",
         Type:    sdk.PluginTypeConnector,
         Capabilities: sdk.PluginCapabilities{
             ConnectorDescriptor: &sdk.ConnectorDescriptor{

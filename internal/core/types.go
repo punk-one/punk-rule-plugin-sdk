@@ -212,14 +212,18 @@ const (
 )
 
 type StreamOpenRequest struct {
-	ResourceRef    string            `json:"resource_ref,omitempty"`
-	SessionKey     string            `json:"session_key,omitempty"`
-	Target         string            `json:"target,omitempty"`
-	Payload        json.RawMessage   `json:"payload,omitempty"`
-	Priority       string            `json:"priority,omitempty"`
-	UsageWeight    int               `json:"usage_weight,omitempty"`
-	InitialCredits int               `json:"initial_credits,omitempty"`
-	Metadata       map[string]string `json:"metadata,omitempty"`
+	ResourceRef         string            `json:"resource_ref,omitempty"`
+	SessionKey          string            `json:"session_key,omitempty"`
+	Target              string            `json:"target,omitempty"`
+	Payload             json.RawMessage   `json:"payload,omitempty"`
+	Priority            string            `json:"priority,omitempty"`
+	UsageWeight         int               `json:"usage_weight,omitempty"`
+	InitialCredits      int               `json:"initial_credits,omitempty"`
+	MaxBufferedMessages int               `json:"max_buffered_messages,omitempty"`
+	OverflowPolicy      string            `json:"overflow_policy,omitempty"`
+	AckTimeoutMS        int               `json:"ack_timeout_ms,omitempty"`
+	MaxDeliverBatch     int               `json:"max_deliver_batch,omitempty"`
+	Metadata            map[string]string `json:"metadata,omitempty"`
 }
 
 type StreamOpenResponse struct {
