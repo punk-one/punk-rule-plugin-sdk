@@ -2,6 +2,19 @@
 
 本文档记录 `punk-rule-plugin-sdk` 自 `v1.5.x` 以来的重要公共 API 与工程结构演进。
 
+## v1.8.0 - 2026-04-20
+
+### Changed
+
+- `StartArgs` 新增 `ResourceEventsEnabled`，由宿主显式声明当前节点是否具备资源事件能力。
+- `RuntimeContext.ResourceEvents()` 改为懒启动语义：首次调用时才启动资源事件轮询。
+- 当节点不具备资源事件能力时，SDK 不再后台轮询 `NextResourceEvent`。
+- 资源事件轮询新增异常快返回退避与指标观测，避免 RPC/Engine 回归时形成 CPU busy loop。
+
+### Validation
+
+- `go test ./...`
+
 ## v1.7.3 - 2026-04-19
 
 ### Added

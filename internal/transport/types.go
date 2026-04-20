@@ -52,9 +52,10 @@ type InitArgs struct{ Config core.PluginConfig }
 type InitReply struct{ Error string }
 
 type StartArgs struct {
-	RuleID string
-	NodeID string
-	Health core.HealthOptions
+	RuleID                string
+	NodeID                string
+	Health                core.HealthOptions
+	ResourceEventsEnabled bool
 }
 
 type StartReply struct{ Error string }

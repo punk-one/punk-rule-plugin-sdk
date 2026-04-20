@@ -260,6 +260,12 @@ type RuntimeContext interface {
 }
 ```
 
+说明：
+
+- `ResourceEvents()` 只在当前节点具备资源事件能力时返回非 `nil` channel；
+- SDK 会在插件首次调用 `ResourceEvents()` 时才懒启动资源事件轮询；
+- 如果当前节点没有 connector / resource event 能力，`ResourceEvents()` 会返回 `nil`，不会在后台发起空轮询。
+
 ### ConnectorPlugin 接口
 
 ```go

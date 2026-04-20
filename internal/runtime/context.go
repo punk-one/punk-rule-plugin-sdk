@@ -2,6 +2,8 @@ package runtime
 
 import (
 	"errors"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/punk-one/punk-rule-plugin-sdk/internal/core"
@@ -34,17 +36,23 @@ type EngineBridge interface {
 }
 
 type PluginRuntimeContext struct {
-	ruleID         string
-	nodeID         string
-	engine         EngineBridge
-	logger         core.Logger
-	emitter        core.Emitter
-	metrics        core.Metrics
-	health         core.HealthReporter
-	stateMgr       core.StateManager
-	connector      core.ConnectorClient
-	resourceEvents chan core.ResourceStatusEvent
-	stopCh         chan struct{}
+	ruleID                string
+	nodeID                string
+	engine                EngineBridge
+	logger                core.Logger
+	emitter               core.Emitter
+	metrics               core.Metrics
+	health                core.HealthReporter
+	stateMgr              core.StateManager
+	connector             core.ConnectorClient
+	resourceEventsEnabled bool
+	resourceEvents        chan core.ResourceStatusEvent
+	resourceEventsInit    sync.Once
+	resourceEventsMu      sync.RWMutex
+	stopCh                chan struct{}
+	stopOnce              sync.Once
+	closed                atomic.Bool
+	loopStarted           atomic.Bool
 }
 
 type noopConnectorClient struct{}
@@ -61,6 +69,17 @@ type engineStreamConsumer struct {
 	buffer          []core.StreamMessage
 	closeOnce       bool
 }
+
+const (
+	resourceEventPollTimeout       = time.Second
+	resourceEventRetryFloor        = 100 * time.Millisecond
+	resourceEventRetryMax          = time.Second
+	resourceEventWarnThreshold     = 500 * time.Millisecond
+	resourceEventTimeoutGrace      = 100 * time.Millisecond
+	resourceEventBackoffCounter    = "sdk_resource_events_backoff_total"
+	resourceEventBackoffObserve    = "sdk_resource_events_backoff_ms"
+	resourceEventFastReturnCounter = "sdk_resource_events_fast_return_total"
+)
 
 func NewNoopConnectorClient() core.ConnectorClient {
 	return noopConnectorClient{}
@@ -232,27 +251,25 @@ func (c *engineStreamConsumer) Close() error {
 	return c.engine.CloseConnectorStream(core.StreamCloseRequest{StreamID: c.streamID})
 }
 
-func NewPluginRuntimeContext(engine EngineBridge, ruleID, nodeID string, healthOptions core.HealthOptions, stateMgr core.StateManager) core.RuntimeContext {
+func NewPluginRuntimeContext(engine EngineBridge, ruleID, nodeID string, healthOptions core.HealthOptions, stateMgr core.StateManager, resourceEventsEnabled bool) core.RuntimeContext {
 	if stateMgr == nil {
 		stateMgr = NewStateManager(ruleID, nodeID, NewRPCStateStore(engine))
 	}
 	ctx := &PluginRuntimeContext{
-		ruleID:         ruleID,
-		nodeID:         nodeID,
-		engine:         engine,
-		logger:         NewRPCLoggerFromEngine(engine, ruleID, nodeID),
-		emitter:        NewRPCEmitterFromEngine(engine),
-		metrics:        NewRPCMetricsFromEngine(engine, ruleID, nodeID),
-		health:         NewEngineHealthReporter(engine, healthOptions),
-		stateMgr:       stateMgr,
-		connector:      engineConnectorClient{engine: engine, ruleID: ruleID, nodeID: nodeID},
-		resourceEvents: make(chan core.ResourceStatusEvent, 8),
-		stopCh:         make(chan struct{}),
+		ruleID:                ruleID,
+		nodeID:                nodeID,
+		engine:                engine,
+		logger:                NewRPCLoggerFromEngine(engine, ruleID, nodeID),
+		emitter:               NewRPCEmitterFromEngine(engine),
+		metrics:               NewRPCMetricsFromEngine(engine, ruleID, nodeID),
+		health:                NewEngineHealthReporter(engine, healthOptions),
+		stateMgr:              stateMgr,
+		connector:             engineConnectorClient{engine: engine, ruleID: ruleID, nodeID: nodeID},
+		resourceEventsEnabled: resourceEventsEnabled && engine != nil,
+		stopCh:                make(chan struct{}),
 	}
 	if engine == nil {
 		ctx.connector = NewNoopConnectorClient()
-	} else {
-		go ctx.resourceEventLoop()
 	}
 	return ctx
 }
@@ -266,6 +283,30 @@ func (r *PluginRuntimeContext) Health() core.HealthReporter     { return r.healt
 func (r *PluginRuntimeContext) State() core.StateManager        { return r.stateMgr }
 func (r *PluginRuntimeContext) Connector() core.ConnectorClient { return r.connector }
 func (r *PluginRuntimeContext) ResourceEvents() <-chan core.ResourceStatusEvent {
+	if r == nil || !r.resourceEventsEnabled || r.closed.Load() {
+		return nil
+	}
+
+	r.resourceEventsInit.Do(func() {
+		if r.closed.Load() {
+			return
+		}
+		ch := make(chan core.ResourceStatusEvent, 8)
+		r.resourceEventsMu.Lock()
+		defer r.resourceEventsMu.Unlock()
+		if r.closed.Load() {
+			return
+		}
+		r.resourceEvents = ch
+		r.loopStarted.Store(true)
+		go r.resourceEventLoop(ch)
+	})
+
+	if r.closed.Load() {
+		return nil
+	}
+	r.resourceEventsMu.RLock()
+	defer r.resourceEventsMu.RUnlock()
 	return r.resourceEvents
 }
 
@@ -273,42 +314,139 @@ func (r *PluginRuntimeContext) Close() error {
 	if r == nil || r.stopCh == nil {
 		return nil
 	}
-	select {
-	case <-r.stopCh:
-	default:
+	r.closed.Store(true)
+	r.stopOnce.Do(func() {
 		close(r.stopCh)
-	}
+	})
 	return nil
 }
 
-func (r *PluginRuntimeContext) resourceEventLoop() {
+func (r *PluginRuntimeContext) resourceEventLoop(events chan core.ResourceStatusEvent) {
 	if r == nil || r.engine == nil {
 		return
 	}
+	defer close(events)
+
+	var backoff time.Duration
+	var backoffActive bool
+	var warned bool
+	consecutiveFailures := 0
+
 	for {
 		select {
 		case <-r.stopCh:
-			close(r.resourceEvents)
 			return
 		default:
 		}
 
-		event, ok, err := r.engine.NextResourceEvent(time.Second)
+		start := time.Now()
+		event, ok, err := r.engine.NextResourceEvent(resourceEventPollTimeout)
+		elapsed := time.Since(start)
+
 		if err != nil || !ok {
+			delay, reason := nextResourceEventRetryDelay(backoff, elapsed, err, ok)
+			if delay > 0 {
+				consecutiveFailures++
+				labels := resourceEventMetricLabels(r.ruleID, r.nodeID, reason)
+				if !backoffActive {
+					r.metrics.IncCounter(resourceEventBackoffCounter, labels)
+					if reason == "fast_false" {
+						r.metrics.IncCounter(resourceEventFastReturnCounter, labels)
+					}
+				}
+				if delay != backoff {
+					r.metrics.Observe(resourceEventBackoffObserve, float64(delay/time.Millisecond), labels)
+				}
+				if delay >= resourceEventWarnThreshold && !warned {
+					r.logger.Warn("Resource events loop entering backoff",
+						core.Field{Key: "rule_id", Value: r.ruleID},
+						core.Field{Key: "node_id", Value: r.nodeID},
+						core.Field{Key: "reason", Value: reason},
+						core.Field{Key: "backoff_ms", Value: delay.Milliseconds()},
+						core.Field{Key: "consecutive_failures", Value: consecutiveFailures},
+					)
+					warned = true
+				}
+				backoff = delay
+				backoffActive = true
+				if !waitForRetryOrStop(r.stopCh, delay) {
+					return
+				}
+			} else if backoffActive {
+				r.logger.Info("Resource events loop recovered",
+					core.Field{Key: "rule_id", Value: r.ruleID},
+					core.Field{Key: "node_id", Value: r.nodeID},
+				)
+				backoff = 0
+				backoffActive = false
+				warned = false
+				consecutiveFailures = 0
+			}
 			continue
+		}
+
+		if backoffActive {
+			r.logger.Info("Resource events loop recovered",
+				core.Field{Key: "rule_id", Value: r.ruleID},
+				core.Field{Key: "node_id", Value: r.nodeID},
+			)
+			backoff = 0
+			backoffActive = false
+			warned = false
+			consecutiveFailures = 0
 		}
 
 		select {
 		case <-r.stopCh:
-			close(r.resourceEvents)
 			return
-		case r.resourceEvents <- event:
+		case events <- event:
 		default:
 			select {
-			case <-r.resourceEvents:
+			case <-events:
 			default:
 			}
-			r.resourceEvents <- event
+			events <- event
 		}
+	}
+}
+
+func nextResourceEventRetryDelay(previous, elapsed time.Duration, err error, ok bool) (time.Duration, string) {
+	if err == nil && !ok && elapsed+resourceEventTimeoutGrace >= resourceEventPollTimeout {
+		return 0, ""
+	}
+
+	reason := "fast_false"
+	if err != nil {
+		reason = "rpc_error"
+	}
+	if previous < resourceEventRetryFloor {
+		return resourceEventRetryFloor, reason
+	}
+	next := previous * 2
+	if next > resourceEventRetryMax {
+		next = resourceEventRetryMax
+	}
+	return next, reason
+}
+
+func waitForRetryOrStop(stopCh <-chan struct{}, delay time.Duration) bool {
+	if delay <= 0 {
+		return true
+	}
+	timer := time.NewTimer(delay)
+	defer timer.Stop()
+	select {
+	case <-stopCh:
+		return false
+	case <-timer.C:
+		return true
+	}
+}
+
+func resourceEventMetricLabels(ruleID, nodeID, reason string) map[string]string {
+	return map[string]string{
+		"rule_id": ruleID,
+		"node_id": nodeID,
+		"reason":  reason,
 	}
 }

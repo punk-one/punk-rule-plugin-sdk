@@ -1,6 +1,8 @@
 package runtime
 
 import (
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -11,6 +13,8 @@ type engineBridgeStub struct {
 	state           map[string][]byte
 	counter         string
 	observation     string
+	counters        []string
+	observations    []string
 	health          []core.ReportHealthArgs
 	streamOpenReq   core.StreamOpenRequest
 	streamRecvReqs  []core.StreamReceiveRequest
@@ -19,6 +23,9 @@ type engineBridgeStub struct {
 	streamGrantReq  core.StreamGrantCreditsRequest
 	streamCloseReq  core.StreamCloseRequest
 	streamRecvCalls int
+	nextEvent       func(timeout time.Duration) (core.ResourceStatusEvent, bool, error)
+	nextEventCalls  int64
+	mu              sync.Mutex
 }
 
 func newEngineBridgeStub() *engineBridgeStub {
@@ -31,9 +38,38 @@ func (s *engineBridgeStub) Log(level core.LogLevel, msg string, fields map[strin
 }
 func (s *engineBridgeStub) LogBatch(level core.LogLevel, messages []string, fields []map[string]interface{}) {
 }
-func (s *engineBridgeStub) IncCounter(name string, labels map[string]string) { s.counter = name }
-func (s *engineBridgeStub) Observe(name string, value float64, labels map[string]string) {
-	s.observation = name
+func (s *engineBridgeStub) recordCounter(name string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.counters = append(s.counters, name)
+}
+func (s *engineBridgeStub) recordObservation(name string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.observations = append(s.observations, name)
+}
+func (s *engineBridgeStub) hasCounter(name string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, got := range s.counters {
+		if got == name {
+			return true
+		}
+	}
+	return false
+}
+func (s *engineBridgeStub) hasObservation(name string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, got := range s.observations {
+		if got == name {
+			return true
+		}
+	}
+	return false
+}
+func (s *engineBridgeStub) nextResourceEventCallsCount() int64 {
+	return atomic.LoadInt64(&s.nextEventCalls)
 }
 func (s *engineBridgeStub) ReportHealth(args core.ReportHealthArgs) error {
 	s.health = append(s.health, args)
@@ -51,6 +87,14 @@ func (s *engineBridgeStub) SetState(key string, value []byte) error {
 	s.state[key] = append([]byte(nil), value...)
 	return nil
 }
+func (s *engineBridgeStub) IncCounter(name string, labels map[string]string) {
+	s.counter = name
+	s.recordCounter(name)
+}
+func (s *engineBridgeStub) Observe(name string, value float64, labels map[string]string) {
+	s.observation = name
+	s.recordObservation(name)
+}
 func (s *engineBridgeStub) ExecuteConnector(req core.ConnectorRequest) (core.ConnectorResponse, error) {
 	return core.ConnectorResponse{}, nil
 }
@@ -58,6 +102,10 @@ func (s *engineBridgeStub) CurrentResourceStatus(resourceRef string) (core.Resou
 	return core.ResourceStatusEvent{}, false
 }
 func (s *engineBridgeStub) NextResourceEvent(timeout time.Duration) (core.ResourceStatusEvent, bool, error) {
+	atomic.AddInt64(&s.nextEventCalls, 1)
+	if s.nextEvent != nil {
+		return s.nextEvent(timeout)
+	}
 	return core.ResourceStatusEvent{}, false, nil
 }
 func (s *engineBridgeStub) OpenConnectorStream(req core.StreamOpenRequest) (core.StreamOpenResponse, error) {
@@ -125,7 +173,7 @@ func waitForHealthMessages(t *testing.T, stub *engineBridgeStub, expected int) [
 
 func TestNewPluginRuntimeContextProvidesStateAndMetrics(t *testing.T) {
 	engine := newEngineBridgeStub()
-	ctx := NewPluginRuntimeContext(engine, "rule-test", "node-test", core.DefaultHealthOptions(), nil)
+	ctx := NewPluginRuntimeContext(engine, "rule-test", "node-test", core.DefaultHealthOptions(), nil, false)
 
 	if ctx.RuleID() != "rule-test" || ctx.NodeID() != "node-test" {
 		t.Fatalf("unexpected context identity: %s/%s", ctx.RuleID(), ctx.NodeID())
@@ -179,7 +227,7 @@ func TestHealthReporterSuppressesDuplicateState(t *testing.T) {
 		HeartbeatInterval: time.Hour,
 		MaxSilencePeriod:  time.Minute,
 		QueueCapacity:     8,
-	}, nil)
+	}, nil, false)
 	if closer, ok := ctx.Health().(interface{ Close() error }); ok {
 		t.Cleanup(func() { _ = closer.Close() })
 	}
@@ -209,7 +257,7 @@ func TestHealthReporterEmitsHeartbeat(t *testing.T) {
 		HeartbeatInterval: 25 * time.Millisecond,
 		MaxSilencePeriod:  time.Minute,
 		QueueCapacity:     8,
-	}, nil)
+	}, nil, false)
 	if closer, ok := ctx.Health().(interface{ Close() error }); ok {
 		t.Cleanup(func() { _ = closer.Close() })
 	}
@@ -222,7 +270,7 @@ func TestHealthReporterEmitsHeartbeat(t *testing.T) {
 
 func TestRuntimeContextConnectorStreamForwardsToEngineBridge(t *testing.T) {
 	engine := newEngineBridgeStub()
-	ctx := NewPluginRuntimeContext(engine, "rule-stream", "source-mqtt", core.DefaultHealthOptions(), nil)
+	ctx := NewPluginRuntimeContext(engine, "rule-stream", "source-mqtt", core.DefaultHealthOptions(), nil, false)
 
 	stream, err := ctx.Connector().OpenStream(core.StreamOpenRequest{
 		ResourceRef:         "mqtt-1",
@@ -300,5 +348,116 @@ func TestRuntimeContextConnectorStreamForwardsToEngineBridge(t *testing.T) {
 	}
 	if engine.streamCloseReq.StreamID != "stream-1" {
 		t.Fatalf("unexpected close request: %#v", engine.streamCloseReq)
+	}
+}
+
+func TestRuntimeContextResourceEventsReturnsNilWhenDisabled(t *testing.T) {
+	engine := newEngineBridgeStub()
+	ctx := NewPluginRuntimeContext(engine, "rule-test", "node-test", core.DefaultHealthOptions(), nil, false)
+
+	if ctx.ResourceEvents() != nil {
+		t.Fatal("expected resource events channel to be nil when disabled")
+	}
+
+	time.Sleep(30 * time.Millisecond)
+	if got := engine.nextResourceEventCallsCount(); got != 0 {
+		t.Fatalf("expected no resource polling when disabled, got %d calls", got)
+	}
+}
+
+func TestRuntimeContextResourceEventsStartsPollingOnlyAfterRequested(t *testing.T) {
+	engine := newEngineBridgeStub()
+	ctx := NewPluginRuntimeContext(engine, "rule-test", "node-test", core.DefaultHealthOptions(), nil, true)
+	if closer, ok := ctx.(interface{ Close() error }); ok {
+		defer func() { _ = closer.Close() }()
+	}
+
+	time.Sleep(30 * time.Millisecond)
+	if got := engine.nextResourceEventCallsCount(); got != 0 {
+		t.Fatalf("expected no polling before ResourceEvents is requested, got %d calls", got)
+	}
+
+	if ctx.ResourceEvents() == nil {
+		t.Fatal("expected resource events channel when enabled")
+	}
+
+	deadline := time.Now().Add(200 * time.Millisecond)
+	for time.Now().Before(deadline) {
+		if engine.nextResourceEventCallsCount() > 0 {
+			return
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	t.Fatal("expected polling to start after ResourceEvents() call")
+}
+
+func TestRuntimeContextResourceEventsConcurrentCallsStartSingleLoop(t *testing.T) {
+	engine := newEngineBridgeStub()
+	block := make(chan struct{})
+	engine.nextEvent = func(timeout time.Duration) (core.ResourceStatusEvent, bool, error) {
+		<-block
+		return core.ResourceStatusEvent{}, false, nil
+	}
+	ctx := NewPluginRuntimeContext(engine, "rule-test", "node-test", core.DefaultHealthOptions(), nil, true)
+	if closer, ok := ctx.(interface{ Close() error }); ok {
+		defer func() {
+			_ = closer.Close()
+			close(block)
+		}()
+	} else {
+		defer close(block)
+	}
+
+	results := make([]<-chan core.ResourceStatusEvent, 8)
+	var wg sync.WaitGroup
+	for i := range results {
+		wg.Add(1)
+		go func(index int) {
+			defer wg.Done()
+			results[index] = ctx.ResourceEvents()
+		}(i)
+	}
+	wg.Wait()
+
+	first := results[0]
+	if first == nil {
+		t.Fatal("expected non-nil resource events channel")
+	}
+	for i := 1; i < len(results); i++ {
+		if results[i] != first {
+			t.Fatalf("expected all callers to receive the same channel, mismatch at index %d", i)
+		}
+	}
+
+	deadline := time.Now().Add(100 * time.Millisecond)
+	for time.Now().Before(deadline) {
+		if got := engine.nextResourceEventCallsCount(); got == 1 {
+			return
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	t.Fatalf("expected a single polling loop, got %d calls", engine.nextResourceEventCallsCount())
+}
+
+func TestRuntimeContextResourceEventsBacksOffOnFastEmptyResponses(t *testing.T) {
+	engine := newEngineBridgeStub()
+	ctx := NewPluginRuntimeContext(engine, "rule-test", "node-test", core.DefaultHealthOptions(), nil, true)
+	if closer, ok := ctx.(interface{ Close() error }); ok {
+		defer func() { _ = closer.Close() }()
+	}
+
+	if ctx.ResourceEvents() == nil {
+		t.Fatal("expected resource events channel when enabled")
+	}
+
+	time.Sleep(150 * time.Millisecond)
+	if got := engine.nextResourceEventCallsCount(); got > 3 {
+		t.Fatalf("expected fast empty responses to be throttled, got %d polls", got)
+	}
+	if !engine.hasCounter("sdk_resource_events_backoff_total") {
+		t.Fatal("expected backoff counter to be emitted")
+	}
+	if !engine.hasObservation("sdk_resource_events_backoff_ms") {
+		t.Fatal("expected backoff observation to be emitted")
 	}
 }

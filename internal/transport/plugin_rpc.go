@@ -61,6 +61,7 @@ func (s *PluginRPCServer) Start(args *StartArgs, reply *StartReply) error {
 		args.NodeID,
 		mergeHealthOptions(args.Health, s.defaultHealth),
 		nil,
+		args.ResourceEventsEnabled,
 	)
 	s.ctx = ctx
 
