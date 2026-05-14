@@ -2,6 +2,21 @@
 
 本文档记录 `punk-rule-plugin-sdk` 自 `v1.5.x` 以来的重要公共 API 与工程结构演进。
 
+## v1.8.1 - 2026-05-14
+
+### Changed
+
+- `ConnectorBindingSpec.Required` 现在总是显式出现在 JSON 中，避免 `required:false` 在契约序列化时被省略。
+- README 与 processor 示例已明确 `processor` 可以声明单 connector 绑定契约。
+
+### Added
+
+- 新增 `processor` connector 契约回归测试，锁定 `PluginTypeProcessor` 的 `connector_binding` JSON 形态。
+
+### Validation
+
+- `go test ./...`
+
 ## v1.8.0 - 2026-04-20
 
 ### Changed

@@ -31,7 +31,7 @@ type ConnectorDescriptor struct {
 }
 
 type ConnectorBindingSpec struct {
-	Required             bool     `json:"required,omitempty"`
+	Required             bool     `json:"required"`
 	AcceptedFamilies     []string `json:"accepted_families,omitempty"`
 	RequiredCapabilities []string `json:"required_capabilities,omitempty"`
 }

@@ -23,7 +23,7 @@ go get github.com/punk-one/punk-rule-plugin-sdk@latest
 发布正式版本后，推荐显式指定 tag：
 
 ```bash
-go get github.com/punk-one/punk-rule-plugin-sdk@v1.7.3
+go get github.com/punk-one/punk-rule-plugin-sdk@v1.8.1
 ```
 
 ## 目录结构
@@ -81,10 +81,15 @@ func (p *MyProcessor) Info() sdk.PluginInfo {
     return sdk.PluginInfo{
         ID:      "my-processor",
         Name:    "My Processor",
-        Version: "1.7.3",
+        Version: "1.8.1",
         Type:    sdk.PluginTypeProcessor,
         Capabilities: sdk.PluginCapabilities{
             SupportBatch: true, // 声明支持批量处理
+            ConnectorBinding: &sdk.ConnectorBindingSpec{
+                Required:             false, // processor 可不绑定 connector；绑定时最多 1 个
+                AcceptedFamilies:     []string{"http", "rest"},
+                RequiredCapabilities: []string{"read"},
+            },
         },
     }
 }
@@ -99,6 +104,11 @@ func (p *MyProcessor) Start(ctx sdk.RuntimeContext) error {
 
 // 单个事件处理
 func (p *MyProcessor) OnEvent(e sdk.Event) error {
+    // 如当前节点绑定了 connector，可直接在事件处理过程中访问。
+    _, _ = p.ctx.Connector().Read(sdk.ConnectorRequest{
+        Target:  "enrich",
+        Payload: []byte(`{"lookup":"device_id"}`),
+    })
     e.Payload["processed"] = true
     return p.ctx.Emitter().Publish(e)
 }
@@ -137,7 +147,7 @@ func (c *MyConnector) Info() sdk.PluginInfo {
     return sdk.PluginInfo{
         ID:      "connect-demo",
         Name:    "Demo Connector",
-        Version: "1.7.3",
+        Version: "1.8.1",
         Type:    sdk.PluginTypeConnector,
         Capabilities: sdk.PluginCapabilities{
             ConnectorDescriptor: &sdk.ConnectorDescriptor{
@@ -339,7 +349,8 @@ func (c *S7Connector) Info() sdk.PluginInfo {
 推荐约定：
 
 - `ConnectorDescriptor` 由 `connect-*` 插件声明自身的 family、可用能力和连接摘要字段。
-- `ConnectorBindingSpec` 由 `source-*` / `sink-*` 插件声明其需要的 connector family 和 capability。
+- `ConnectorBindingSpec` 由 `source-*` / `sink-*` / `processor-*` 插件声明其需要的 connector family 和 capability。
+- 对 `processor-*` 而言，当前建议保持单绑定语义：不绑定，或绑定 1 个满足约束的 connector。
 - 引擎与 UI 应优先依据这两个结构做兼容性过滤和强校验，而不是依赖字符串约定。
 
 _ = resource.SetQuotaPolicy(sdk.QuotaPolicy{
